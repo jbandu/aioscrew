@@ -1,13 +1,42 @@
-import { AlertCircle, CheckCircle, Users, Plane, Clock, MapPin } from 'lucide-react';
+import { useState } from 'react';
+import { AlertCircle, CheckCircle, Users, Plane, Clock, MapPin, Settings } from 'lucide-react';
 import ConversationalAI from '../components/ConversationalAI';
 import { trips, alerts, crewMembers } from '../data/mockData';
+import OperationsCenterView from './controller/OperationsCenterView';
+import ActiveCrewView from './controller/ActiveCrewView';
+import ReservePoolView from './controller/ReservePoolView';
+import DisruptionsView from './controller/DisruptionsView';
+import SettingsView from './controller/SettingsView';
 
 export default function ControllerView() {
+  const [activeSubView, setActiveSubView] = useState<string>('dashboard');
+
   const operatingFlights = trips.filter(t => t.status === 'scheduled' || t.status === 'active').length;
   const delayedFlights = trips.filter(t => t.status === 'delayed').length;
   const cancelledFlights = trips.filter(t => t.status === 'cancelled').length;
   const activeAlerts = alerts.filter(a => !a.resolved);
   const reserveCrew = crewMembers.filter(c => c.base === 'PTY').slice(0, 3);
+
+  // Render submenu views
+  if (activeSubView === 'operations-center') {
+    return <OperationsCenterView onBack={() => setActiveSubView('dashboard')} />;
+  }
+
+  if (activeSubView === 'active-crew') {
+    return <ActiveCrewView onBack={() => setActiveSubView('dashboard')} />;
+  }
+
+  if (activeSubView === 'reserve-pool') {
+    return <ReservePoolView onBack={() => setActiveSubView('dashboard')} />;
+  }
+
+  if (activeSubView === 'disruptions') {
+    return <DisruptionsView onBack={() => setActiveSubView('dashboard')} />;
+  }
+
+  if (activeSubView === 'settings') {
+    return <SettingsView onBack={() => setActiveSubView('dashboard')} />;
+  }
 
   return (
     <div className="space-y-6">
@@ -204,29 +233,50 @@ export default function ControllerView() {
         </div>
       </div>
 
-      <div className="grid md:grid-cols-4 gap-4">
-        <button className="px-6 py-4 bg-white hover:bg-gray-50 text-gray-900 rounded-lg shadow-md transition-colors text-left">
-          <Plane className="w-6 h-6 text-blue-600 mb-2" />
+      <div className="grid md:grid-cols-5 gap-4">
+        <button
+          onClick={() => setActiveSubView('operations-center')}
+          className="px-6 py-4 bg-white hover:bg-gray-50 text-gray-900 rounded-lg shadow-md transition-colors text-left"
+        >
+          <Plane className="w-6 h-6 text-red-600 mb-2" />
+          <div className="font-semibold">Operations Center</div>
+          <div className="text-xs text-gray-600">Live dashboard & monitoring</div>
+        </button>
+
+        <button
+          onClick={() => setActiveSubView('active-crew')}
+          className="px-6 py-4 bg-white hover:bg-gray-50 text-gray-900 rounded-lg shadow-md transition-colors text-left"
+        >
+          <Users className="w-6 h-6 text-blue-600 mb-2" />
           <div className="font-semibold">Active Crew</div>
           <div className="text-xs text-gray-600">Real-time tracking</div>
         </button>
 
-        <button className="px-6 py-4 bg-white hover:bg-gray-50 text-gray-900 rounded-lg shadow-md transition-colors text-left">
-          <Users className="w-6 h-6 text-green-600 mb-2" />
+        <button
+          onClick={() => setActiveSubView('reserve-pool')}
+          className="px-6 py-4 bg-white hover:bg-gray-50 text-gray-900 rounded-lg shadow-md transition-colors text-left"
+        >
+          <CheckCircle className="w-6 h-6 text-green-600 mb-2" />
           <div className="font-semibold">Reserve Pool</div>
           <div className="text-xs text-gray-600">Availability management</div>
         </button>
 
-        <button className="px-6 py-4 bg-white hover:bg-gray-50 text-gray-900 rounded-lg shadow-md transition-colors text-left">
-          <AlertCircle className="w-6 h-6 text-red-600 mb-2" />
+        <button
+          onClick={() => setActiveSubView('disruptions')}
+          className="px-6 py-4 bg-white hover:bg-gray-50 text-gray-900 rounded-lg shadow-md transition-colors text-left"
+        >
+          <AlertCircle className="w-6 h-6 text-amber-600 mb-2" />
           <div className="font-semibold">Disruptions</div>
           <div className="text-xs text-gray-600">All active issues</div>
         </button>
 
-        <button className="px-6 py-4 bg-white hover:bg-gray-50 text-gray-900 rounded-lg shadow-md transition-colors text-left">
-          <CheckCircle className="w-6 h-6 text-purple-600 mb-2" />
-          <div className="font-semibold">Recovery Plans</div>
-          <div className="text-xs text-gray-600">AI-generated solutions</div>
+        <button
+          onClick={() => setActiveSubView('settings')}
+          className="px-6 py-4 bg-white hover:bg-gray-50 text-gray-900 rounded-lg shadow-md transition-colors text-left"
+        >
+          <Settings className="w-6 h-6 text-gray-600 mb-2" />
+          <div className="font-semibold">Settings</div>
+          <div className="text-xs text-gray-600">Configure preferences</div>
         </button>
       </div>
     </div>
