@@ -38,7 +38,6 @@ COPY tsconfig.app.json ./
 COPY tsconfig.node.json ./
 COPY postcss.config.js ./
 COPY tailwind.config.js ./
-COPY eslint.config.js ./
 
 # Build frontend
 RUN npm run build
