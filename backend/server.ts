@@ -27,6 +27,11 @@ app.use((req, res, next) => {
   next();
 });
 
+// Health check endpoint (for Railway)
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'healthy', timestamp: new Date().toISOString() });
+});
+
 // Routes
 app.use('/api/agents', agentRoutes);
 
@@ -37,7 +42,8 @@ app.get('/', (req, res) => {
     version: '1.0.0',
     status: 'running',
     endpoints: {
-      health: '/api/agents/health',
+      health: '/health',
+      agentHealth: '/api/agents/health',
       validate: 'POST /api/agents/validate',
       validateClaim: 'POST /api/agents/validate-claim'
     }
