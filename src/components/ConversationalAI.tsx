@@ -63,32 +63,32 @@ export default function ConversationalAI({ role, context }: ConversationalAIProp
   };
 
   return (
-    <div className="flex flex-col h-full bg-white rounded-lg shadow-lg border-2 border-copa-gold">
-      <div className="flex items-center gap-3 px-4 py-4 border-b-2 border-copa-gold bg-gradient-to-r from-copa-blue-50 to-white">
-        <div className="h-10 w-10 rounded-full bg-copa-blue flex items-center justify-center">
-          <span className="text-copa-gold text-xl">🤖</span>
+    <div className="flex flex-col h-full bg-white rounded-lg shadow-lg border border-gray-200">
+      <div className="flex items-center gap-3 px-4 py-4 border-b bg-gradient-to-r from-blue-50 to-white">
+        <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center">
+          <Sparkles className="text-white w-5 h-5" />
         </div>
         <div>
-          <h3 className="font-bold text-copa-blue">Copa Crew AI Assistant</h3>
-          <p className="text-xs text-gray-600">Powered by Number Labs</p>
+          <h3 className="font-bold text-slate-900">AI Assistant</h3>
+          <p className="text-xs text-gray-600">Powered by AI</p>
         </div>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-[400px] max-h-[600px]">
         {messages.length === 0 && (
           <div className="text-center py-8">
-            <div className="inline-flex items-center justify-center h-16 w-16 rounded-full bg-copa-blue-50 mb-4">
-              <span className="text-3xl">💬</span>
+            <div className="inline-flex items-center justify-center h-16 w-16 rounded-full bg-blue-50 mb-4">
+              <Sparkles className="w-8 h-8 text-blue-600" />
             </div>
             <p className="text-gray-600 mb-2 font-semibold">Hello! How can I help you today?</p>
-            <p className="text-sm text-gray-500 mb-6">Ask me anything about your Copa crew operations</p>
+            <p className="text-sm text-gray-500 mb-6">Ask me anything about crew operations</p>
             <div className="space-y-2">
               <p className="text-xs text-gray-500 mb-2 font-medium">Suggested questions:</p>
               {suggestedPrompts[role]?.map((prompt, idx) => (
                 <button
                   key={idx}
                   onClick={() => handlePromptClick(prompt)}
-                  className="block w-full text-left px-4 py-2 text-sm bg-copa-blue-50 hover:bg-copa-blue hover:text-white text-copa-blue rounded-lg transition-colors"
+                  className="block w-full text-left px-4 py-2 text-sm bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-600 rounded-lg transition-colors"
                 >
                   {prompt}
                 </button>
@@ -105,8 +105,8 @@ export default function ConversationalAI({ role, context }: ConversationalAIProp
             <div
               className={`max-w-[80%] rounded-lg px-4 py-2 ${
                 message.role === 'user'
-                  ? 'bg-copa-gold/20 text-gray-800'
-                  : 'bg-copa-blue-50 text-gray-900'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-900'
               }`}
             >
               {message.context && (
@@ -124,11 +124,11 @@ export default function ConversationalAI({ role, context }: ConversationalAIProp
 
         {isTyping && (
           <div className="flex justify-start">
-            <div className="bg-copa-blue-50 rounded-lg px-4 py-3">
+            <div className="bg-gray-100 rounded-lg px-4 py-3">
               <div className="flex gap-1">
-                <div className="w-2 h-2 bg-copa-gold rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <div className="w-2 h-2 bg-copa-gold rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <div className="w-2 h-2 bg-copa-gold rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
               </div>
             </div>
           </div>
@@ -149,14 +149,14 @@ export default function ConversationalAI({ role, context }: ConversationalAIProp
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask me about your Copa crew operations..."
-            className="flex-1 px-4 py-3 border-2 border-copa-blue/30 rounded-lg focus:outline-none focus:border-copa-blue focus:ring-2 focus:ring-copa-blue/20"
+            placeholder="Ask me about crew operations..."
+            className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
             disabled={isTyping}
           />
           <button
             type="submit"
             disabled={!input.trim() || isTyping}
-            className="px-6 py-3 bg-copa-blue text-white rounded-lg hover:bg-copa-blue-light disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-semibold"
+            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-semibold"
           >
             <Send className="w-5 h-5" />
           </button>

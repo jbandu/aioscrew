@@ -62,8 +62,8 @@ export default function Sidebar({ role }: SidebarProps) {
             key={idx}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${
               item.active
-                ? 'bg-copa-gold text-copa-blue font-semibold'
-                : 'text-white hover:bg-copa-blue-light'
+                ? 'bg-blue-600 text-white font-semibold'
+                : 'text-slate-300 hover:bg-slate-700'
             }`}
           >
             <Icon className="w-5 h-5" />

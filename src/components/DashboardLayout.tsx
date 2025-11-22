@@ -26,7 +26,7 @@ export default function DashboardLayout({ role, onLogout, children, sidebar, tit
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-copa-blue text-white shadow-lg">
+      <header className="bg-gradient-to-r from-slate-800 to-slate-900 text-white shadow-lg">
         <div className="container mx-auto px-6">
           <div className="flex items-center justify-between h-20">
             <div className="flex items-center space-x-4">
@@ -36,14 +36,9 @@ export default function DashboardLayout({ role, onLogout, children, sidebar, tit
               >
                 {sidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
               </button>
-              <img
-                src="/image.png"
-                alt="Copa Airlines"
-                className="h-10 w-auto"
-              />
-              <div className="border-l border-white/30 pl-4">
+              <div>
                 <h1 className="text-xl font-bold">{title}</h1>
-                <p className="text-xs text-copa-gold">Copa Airlines Crew System</p>
+                <p className="text-xs text-blue-400">Crew Operating System</p>
               </div>
             </div>
 
@@ -52,8 +47,8 @@ export default function DashboardLayout({ role, onLogout, children, sidebar, tit
                 <span className="text-sm font-medium">Captain Sarah Martinez</span>
                 <div className="text-xs text-white/80">{config.name}</div>
               </div>
-              <div className="h-10 w-10 rounded-full bg-copa-gold flex items-center justify-center">
-                <span className="text-copa-blue font-bold text-sm">SM</span>
+              <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center">
+                <span className="text-white font-bold text-sm">SM</span>
               </div>
               <button
                 onClick={onLogout}
@@ -72,26 +67,22 @@ export default function DashboardLayout({ role, onLogout, children, sidebar, tit
           <aside
             className={`
               fixed lg:static inset-y-0 left-0 z-40
-              w-64 bg-copa-blue-dark text-white rounded-lg shadow-lg
+              w-64 bg-slate-800 text-white rounded-lg shadow-lg
               transform transition-transform duration-300 ease-in-out
               ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
               mt-0 lg:mt-0 top-20 lg:top-0
             `}
           >
-            <div className="p-6 border-b border-copa-gold/30">
-              <img
-                src="/image.png"
-                alt="Copa Airlines"
-                className="h-8 w-auto mb-2"
-              />
-              <p className="text-xs text-copa-gold">Crew Operating System</p>
+            <div className="p-6 border-b border-slate-700">
+              <h2 className="font-bold text-lg">Navigation</h2>
+              <p className="text-xs text-slate-400">Crew Operating System</p>
             </div>
             <div className="p-4">
               {sidebar}
             </div>
-            <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-copa-gold/30">
-              <p className="text-xs text-white/60 text-center">
-                Powered by Number Labs AI
+            <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-700">
+              <p className="text-xs text-slate-400 text-center">
+                Powered by AI
               </p>
             </div>
           </aside>

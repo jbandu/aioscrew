@@ -57,9 +57,9 @@ export default function PayrollViewEnhanced() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-gradient-to-r from-copa-blue to-copa-blue-light text-white rounded-lg p-6">
+      <div className="bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg p-6">
         <h2 className="text-3xl font-bold mb-2">Payroll Administration</h2>
-        <p className="text-copa-gold">
+        <p className="text-green-100">
           Period: Nov 16-30, 2024 | {claims.length} total claims
         </p>
       </div>

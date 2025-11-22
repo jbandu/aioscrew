@@ -40,17 +40,13 @@ export default function DatabaseInit({ onComplete }: DatabaseInitProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-copa-blue via-copa-blue-dark to-copa-blue flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center p-4">
       <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full">
         <div className="text-center">
-          <img
-            src="/image.png"
-            alt="Copa Airlines"
-            className="h-16 w-auto mx-auto mb-4"
-          />
+          <Database className="h-16 w-16 mx-auto mb-4 text-blue-600" />
 
-          <h2 className="text-2xl font-bold text-copa-blue mb-2">
-            Initializing Copa Airlines Crew System
+          <h2 className="text-2xl font-bold text-slate-900 mb-2">
+            Initializing Crew System
           </h2>
           <p className="text-gray-600 mb-6">
             Setting up database and loading crew data...
@@ -58,16 +54,16 @@ export default function DatabaseInit({ onComplete }: DatabaseInitProps) {
 
           <div className="space-y-4">
             <div className={`flex items-center gap-3 p-3 rounded-lg ${
-              status === 'checking' || status === 'initializing' ? 'bg-copa-blue-50' :
+              status === 'checking' || status === 'initializing' ? 'bg-blue-50' :
               status === 'seeding' || status === 'complete' ? 'bg-green-50' : 'bg-gray-50'
             }`}>
               {status === 'checking' || status === 'initializing' ? (
-                <Loader className="w-5 h-5 text-copa-blue animate-spin" />
+                <Loader className="w-5 h-5 text-blue-600 animate-spin" />
               ) : (
-                <CheckCircle className="w-5 h-5 text-copa-gold" />
+                <CheckCircle className="w-5 h-5 text-green-600" />
               )}
               <span className={`text-sm font-medium ${
-                status === 'checking' || status === 'initializing' ? 'text-copa-blue' :
+                status === 'checking' || status === 'initializing' ? 'text-blue-600' :
                 status === 'seeding' || status === 'complete' ? 'text-green-700' : 'text-gray-600'
               }`}>
                 Creating database tables
@@ -75,18 +71,18 @@ export default function DatabaseInit({ onComplete }: DatabaseInitProps) {
             </div>
 
             <div className={`flex items-center gap-3 p-3 rounded-lg ${
-              status === 'seeding' ? 'bg-copa-blue-50' :
+              status === 'seeding' ? 'bg-blue-50' :
               status === 'complete' ? 'bg-green-50' : 'bg-gray-50'
             }`}>
               {status === 'seeding' ? (
-                <Loader className="w-5 h-5 text-copa-blue animate-spin" />
+                <Loader className="w-5 h-5 text-blue-600 animate-spin" />
               ) : status === 'complete' ? (
-                <CheckCircle className="w-5 h-5 text-copa-gold" />
+                <CheckCircle className="w-5 h-5 text-green-600" />
               ) : (
                 <div className="w-5 h-5 rounded-full border-2 border-gray-300" />
               )}
               <span className={`text-sm font-medium ${
-                status === 'seeding' ? 'text-copa-blue' :
+                status === 'seeding' ? 'text-blue-600' :
                 status === 'complete' ? 'text-green-700' : 'text-gray-600'
               }`}>
                 Loading crew and flight data
@@ -118,7 +114,7 @@ export default function DatabaseInit({ onComplete }: DatabaseInitProps) {
                   <div className="text-sm text-red-700">{error}</div>
                   <button
                     onClick={initDB}
-                    className="mt-3 px-4 py-2 bg-copa-blue text-white rounded hover:bg-copa-blue-light transition-colors text-sm"
+                    className="mt-3 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm"
                   >
                     Retry
                   </button>
@@ -128,9 +124,9 @@ export default function DatabaseInit({ onComplete }: DatabaseInitProps) {
           )}
 
           {status === 'complete' && (
-            <div className="mt-6 text-copa-gold font-medium flex items-center justify-center gap-2">
+            <div className="mt-6 text-green-600 font-medium flex items-center justify-center gap-2">
               <CheckCircle className="w-5 h-5" />
-              <span>Copa Airlines Crew System Ready!</span>
+              <span>Crew System Ready!</span>
             </div>
           )}
         </div>

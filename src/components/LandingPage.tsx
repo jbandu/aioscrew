@@ -82,22 +82,17 @@ const personas = [
 
 export default function LandingPage({ onSelectRole }: LandingPageProps) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-copa-blue via-copa-blue-dark to-copa-blue text-white">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 text-white">
       <div className="container mx-auto px-4 py-12">
         <div className="text-center mb-12">
-          <img
-            src="/image.png"
-            alt="Copa Airlines"
-            className="h-20 w-auto mx-auto mb-6"
-          />
-          <h1 className="text-4xl font-bold text-white mb-4">
-            Crew Operating System
+          <h1 className="text-5xl font-bold text-white mb-4">
+            Airline Crew Operating System
           </h1>
-          <p className="text-xl text-copa-gold mb-2 font-semibold">
-            Powered by Number Labs AI Intelligence
+          <p className="text-xl text-blue-400 mb-2">
+            Powered by AI Intelligence
           </p>
-          <p className="text-white/90 max-w-2xl mx-auto">
-            The unified platform for Copa Airlines crew operations across all departments
+          <p className="text-slate-300 max-w-2xl mx-auto">
+            Unified platform for airline crew operations across all departments
           </p>
         </div>
 
@@ -110,8 +105,8 @@ export default function LandingPage({ onSelectRole }: LandingPageProps) {
                 onClick={() => onSelectRole(persona.role)}
                 className="bg-white rounded-lg shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 text-left overflow-hidden"
               >
-                <div className="bg-gradient-to-r from-copa-blue to-copa-blue-light p-6">
-                  <Icon className="w-12 h-12 text-copa-gold mb-3" />
+                <div className={`bg-gradient-to-r ${persona.color} p-6`}>
+                  <Icon className="w-12 h-12 text-white mb-3" />
                   <h3 className="text-xl font-bold text-white">{persona.title}</h3>
                   <p className="text-white/80 text-sm">{persona.subtitle}</p>
                 </div>
@@ -119,12 +114,12 @@ export default function LandingPage({ onSelectRole }: LandingPageProps) {
                   <ul className="space-y-2 text-sm text-gray-700 mb-6">
                     {persona.capabilities.map((capability, idx) => (
                       <li key={idx} className="flex items-start">
-                        <span className="text-copa-gold mr-2">✓</span>
+                        <span className="text-green-600 mr-2">✓</span>
                         {capability}
                       </li>
                     ))}
                   </ul>
-                  <div className="w-full bg-copa-blue text-white py-3 rounded-lg hover:bg-copa-blue-light transition-colors font-semibold text-center">
+                  <div className={`w-full bg-gradient-to-r ${persona.color} text-white py-3 rounded-lg hover:opacity-90 transition-opacity font-semibold text-center`}>
                     Login as {persona.title}
                   </div>
                 </div>
@@ -134,17 +129,16 @@ export default function LandingPage({ onSelectRole }: LandingPageProps) {
         </div>
 
         <div className="mt-12 text-center">
-          <div className="inline-flex items-center gap-2 px-6 py-3 bg-white/10 backdrop-blur-sm rounded-full border border-copa-gold/50">
-            <div className="w-2 h-2 rounded-full bg-copa-gold animate-pulse" />
+          <div className="inline-flex items-center gap-2 px-6 py-3 bg-white/10 backdrop-blur-sm rounded-full border border-blue-400/50">
+            <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
             <span className="text-sm text-white">
               Demo Mode - Select any persona to explore the platform
             </span>
           </div>
         </div>
 
-        <div className="mt-12 text-center text-white/60 text-sm">
-          <p>© 2024 Copa Airlines. All rights reserved.</p>
-          <p className="mt-2 text-copa-gold">AI-Powered Crew Intelligence by Number Labs</p>
+        <div className="mt-12 text-center text-slate-400 text-sm">
+          <p>© 2024 Airline Crew Operating System</p>
         </div>
       </div>
     </div>
