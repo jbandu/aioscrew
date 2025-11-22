@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Calendar, Users, DollarSign, AlertTriangle, TrendingDown, Sparkles } from 'lucide-react';
+import { Calendar, Users, DollarSign, AlertTriangle, TrendingDown, Sparkles, Settings } from 'lucide-react';
 import ConversationalAI from '../components/ConversationalAI';
 import { crewMembers, trips } from '../data/mockData';
 import RosterBuilderView from './scheduler/RosterBuilderView';
 import CrewManagementView from './scheduler/CrewManagementView';
 import AnalyticsView from './scheduler/AnalyticsView';
+import SettingsView from './scheduler/SettingsView';
 
 export default function SchedulerView() {
   const [activeSubView, setActiveSubView] = useState<string>('dashboard');
@@ -25,6 +26,11 @@ export default function SchedulerView() {
   // If analytics is active, show that view
   if (activeSubView === 'analytics') {
     return <AnalyticsView />;
+  }
+
+  // If settings is active, show that view
+  if (activeSubView === 'settings') {
+    return <SettingsView />;
   }
 
   return (
@@ -182,21 +188,21 @@ export default function SchedulerView() {
         </button>
 
         <button
-          onClick={() => alert('Bidding System - Coming soon!')}
-          className="px-6 py-4 bg-white hover:bg-gray-50 text-gray-900 rounded-lg shadow-md transition-colors text-left"
-        >
-          <Sparkles className="w-6 h-6 text-green-600 mb-2" />
-          <div className="font-semibold">Bidding System</div>
-          <div className="text-xs text-gray-600">Manage crew bids</div>
-        </button>
-
-        <button
           onClick={() => setActiveSubView('analytics')}
           className="px-6 py-4 bg-white hover:bg-gray-50 text-gray-900 rounded-lg shadow-md transition-colors text-left"
         >
           <DollarSign className="w-6 h-6 text-amber-600 mb-2" />
           <div className="font-semibold">Analytics & Reports</div>
           <div className="text-xs text-gray-600">Metrics & forecasting</div>
+        </button>
+
+        <button
+          onClick={() => setActiveSubView('settings')}
+          className="px-6 py-4 bg-white hover:bg-gray-50 text-gray-900 rounded-lg shadow-md transition-colors text-left"
+        >
+          <Settings className="w-6 h-6 text-gray-600 mb-2" />
+          <div className="font-semibold">Settings</div>
+          <div className="text-xs text-gray-600">System configuration</div>
         </button>
       </div>
     </div>
