@@ -4,8 +4,33 @@ import {
   AgentProcessingStep,
   AgentActivity
 } from '../types/agents';
+import { validateClaimAPI, checkBackendHealth } from './api-client';
+
+// Flag to track backend availability
+let backendAvailable: boolean | null = null;
 
 export async function validateClaimWithAgents(claim: ClaimData): Promise<AgentValidationResult> {
+  // Check backend availability on first call
+  if (backendAvailable === null) {
+    backendAvailable = await checkBackendHealth();
+    console.log(`Backend API: ${backendAvailable ? 'Available ✓' : 'Using mock data ✗'}`);
+  }
+
+  // Try real backend first if available
+  if (backendAvailable) {
+    try {
+      console.log(`Calling real AI agents for claim ${claim.claimNumber}...`);
+      const result = await validateClaimAPI(claim);
+      console.log(`✓ Real AI validation complete: ${result.overallStatus}`);
+      return result;
+    } catch (error) {
+      console.error('Backend API call failed, falling back to mock data:', error);
+      backendAvailable = false; // Mark as unavailable for subsequent calls
+    }
+  }
+
+  // Fallback to mock data
+  console.log(`Using mock validation for claim ${claim.claimNumber}`);
   await delay(1500);
 
   if (claim.type === 'International Premium') {

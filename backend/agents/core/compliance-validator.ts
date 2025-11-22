@@ -1,0 +1,142 @@
+/**
+ * Compliance Validator Agent
+ * Detects fraud, duplicates, and policy violations
+ */
+
+import { callClaudeWithJSON, buildClaimValidationPrompt } from '../shared/claude-client.js';
+import type { AgentInput, AgentResult, Issue } from '../shared/types.js';
+
+const SYSTEM_PROMPT = `You are an expert Compliance Validator and fraud detection specialist for Copa Airlines payroll claims.
+
+Your responsibilities:
+1. Check for duplicate claims (same trip, same crew member, same type)
+2. Verify crew member is qualified for the claimed work
+3. Detect unusual patterns (frequency, amounts, timing)
+4. Validate claim is within filing deadline (7 days from trip)
+5. Check for policy violations and fraud indicators
+6. Review crew member's recent claim history
+
+Red Flags to Check:
+- Multiple claims for the same trip
+- Claims significantly above historical averages
+- Claims filed outside the 7-day window
+- Crew member not qualified for the work claimed (e.g., international premium without international qualification)
+- Suspicious patterns: many claims in short time, all above average amounts
+- Missing supporting documentation for high-value claims
+- Claims for cancelled or never-operated flights
+
+CBA Compliance Rules:
+- Filing deadline: Claims must be submitted within 7 days of trip completion
+- Duplicate prevention: Only one claim per trip per crew member per pay type
+- Qualification requirements: Crew must have valid qualification for claimed work
+- Documentation: Claims over $100 should have supporting documentation
+
+Output Requirements:
+Provide a JSON response with this exact structure:
+{
+  "status": "completed" | "flagged" | "error",
+  "confidence": 0.0 to 1.0,
+  "summary": "brief summary of compliance check",
+  "details": ["finding 1", "finding 2", ...],
+  "reasoning": "detailed explanation",
+  "compliant": true | false,
+  "issues": [
+    {
+      "severity": "high" | "medium" | "low",
+      "title": "Issue title",
+      "description": "Issue description",
+      "suggestedAction": "What to do about it"
+    }
+  ],
+  "fraudRisk": "none" | "low" | "medium" | "high",
+  "fraudIndicators": ["indicator 1", "indicator 2", ...]
+}
+
+Be thorough but fair. Flag legitimate concerns but don't create false positives.`;
+
+interface ComplianceResponse {
+  status: 'completed' | 'flagged' | 'error';
+  confidence: number;
+  summary: string;
+  details: string[];
+  reasoning: string;
+  compliant: boolean;
+  issues: Issue[];
+  fraudRisk: 'none' | 'low' | 'medium' | 'high';
+  fraudIndicators: string[];
+}
+
+export async function runComplianceValidator(input: AgentInput): Promise<AgentResult> {
+  const startTime = Date.now();
+
+  try {
+    // Build context with historical data
+    let historicalContext = '';
+    if (input.historicalData) {
+      historicalContext = `\nHISTORICAL DATA FOR THIS CREW MEMBER:\n`;
+      historicalContext += `- Similar claims filed: ${input.historicalData.similarClaims}\n`;
+      historicalContext += `- Historical approval rate: ${(input.historicalData.approvalRate * 100).toFixed(1)}%\n`;
+      historicalContext += `- Average claim amount: $${input.historicalData.averageAmount.toFixed(2)}\n`;
+
+      if (input.historicalData.recentClaimsByUser && input.historicalData.recentClaimsByUser.length > 0) {
+        historicalContext += `- Recent claims (last 7 days): ${input.historicalData.recentClaimsByUser.length}\n`;
+        historicalContext += `  Types: ${input.historicalData.recentClaimsByUser.map(c => c.type).join(', ')}\n`;
+        historicalContext += `  Amounts: ${input.historicalData.recentClaimsByUser.map(c => `$${c.amount}`).join(', ')}\n`;
+      }
+    }
+
+    const userPrompt = buildClaimValidationPrompt(
+      input.claim,
+      input.trip,
+      input.crew,
+      `Focus on compliance and fraud detection:\n- Any red flags or policy violations?\n- Is this claim within the 7-day filing window?\n- Any unusual patterns in amount or frequency?\n- Is crew qualified for this work?${historicalContext}`
+    );
+
+    const { data, raw } = await callClaudeWithJSON<ComplianceResponse>({
+      systemPrompt: SYSTEM_PROMPT,
+      userPrompt,
+      temperature: 0.2,
+      maxTokens: 2500
+    });
+
+    const duration = (Date.now() - startTime) / 1000;
+
+    // Add detectedBy field to issues
+    const issuesWithDetectedBy = data.issues.map(issue => ({
+      ...issue,
+      detectedBy: 'compliance' as const
+    }));
+
+    return {
+      agentType: 'compliance',
+      agentName: 'Compliance Validator',
+      status: data.status,
+      duration,
+      summary: data.summary,
+      details: data.details,
+      confidence: data.confidence,
+      reasoning: data.reasoning,
+      data: {
+        compliant: data.compliant,
+        issues: issuesWithDetectedBy,
+        fraudRisk: data.fraudRisk,
+        fraudIndicators: data.fraudIndicators,
+        tokensUsed: raw.usage.inputTokens + raw.usage.outputTokens
+      }
+    };
+  } catch (error) {
+    const duration = (Date.now() - startTime) / 1000;
+    console.error('ComplianceValidator error:', error);
+
+    return {
+      agentType: 'compliance',
+      agentName: 'Compliance Validator',
+      status: 'error',
+      duration,
+      summary: 'Agent encountered an error during processing',
+      details: [error instanceof Error ? error.message : 'Unknown error'],
+      confidence: 0,
+      reasoning: 'Failed to complete compliance check due to technical error'
+    };
+  }
+}
