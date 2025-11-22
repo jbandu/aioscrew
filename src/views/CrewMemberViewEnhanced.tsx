@@ -87,15 +87,15 @@ export default function CrewMemberViewEnhanced() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg p-6">
+      <div className="bg-gradient-to-r from-copa-blue to-copa-blue-light text-white rounded-lg p-6">
         <h2 className="text-3xl font-bold mb-2">Good morning, {currentUser.role} {currentUser.name}</h2>
-        <p className="text-blue-100">
+        <p className="text-copa-gold">
           Based on {currentUser.seniority} years seniority, Copa {currentUser.base} base, {currentUser.qualification} qualified
         </p>
       </div>
 
       <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg shadow-md p-4 border-l-4 border-green-500">
+        <div className="bg-white rounded-lg shadow-md p-4 border-l-4 border-copa-gold">
           <div className="flex items-start justify-between mb-2">
             <div className="p-2 bg-green-100 rounded-lg">
               <CheckCircle className="w-5 h-5 text-green-600" />
@@ -205,7 +205,7 @@ export default function CrewMemberViewEnhanced() {
               </h3>
               <button
                 onClick={() => setShowClaimForm(true)}
-                className="flex items-center gap-1 px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors"
+                className="flex items-center gap-1 px-3 py-1 bg-copa-blue text-white rounded text-sm hover:bg-copa-blue-light transition-colors"
               >
                 <Plus className="w-4 h-4" />
                 New Claim
@@ -314,7 +314,7 @@ export default function CrewMemberViewEnhanced() {
                 <button
                   onClick={handleSubmitClaim}
                   disabled={!newClaim.tripId || !newClaim.amount}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="flex-1 px-4 py-2 bg-copa-blue text-white rounded-lg hover:bg-copa-blue-light disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   Submit Claim
                 </button>

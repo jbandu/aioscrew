@@ -54,16 +54,16 @@ export default function Sidebar({ role }: SidebarProps) {
   const menuItems = sidebarMenus[role] || [];
 
   return (
-    <nav className="space-y-2">
+    <nav className="space-y-1">
       {menuItems.map((item, idx) => {
         const Icon = item.icon;
         return (
           <button
             key={idx}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${
               item.active
-                ? 'bg-blue-100 text-blue-700 font-medium'
-                : 'text-gray-700 hover:bg-gray-100'
+                ? 'bg-copa-gold text-copa-blue font-semibold'
+                : 'text-white hover:bg-copa-blue-light'
             }`}
           >
             <Icon className="w-5 h-5" />

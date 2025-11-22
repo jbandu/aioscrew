@@ -82,53 +82,50 @@ const personas = [
 
 export default function LandingPage({ onSelectRole }: LandingPageProps) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 text-white">
-      <div className="container mx-auto px-4 py-16">
-        <div className="text-center mb-16">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <Plane className="w-12 h-12" />
-            <h1 className="text-5xl font-bold">Crew Operating System</h1>
-          </div>
-          <p className="text-xl text-blue-200 max-w-3xl mx-auto">
-            The Unified Intelligence Platform for Airline Crew Operations
+    <div className="min-h-screen bg-gradient-to-br from-copa-blue via-copa-blue-dark to-copa-blue text-white">
+      <div className="container mx-auto px-4 py-12">
+        <div className="text-center mb-12">
+          <img
+            src="/image.png"
+            alt="Copa Airlines"
+            className="h-20 w-auto mx-auto mb-6"
+          />
+          <h1 className="text-4xl font-bold text-white mb-4">
+            Crew Operating System
+          </h1>
+          <p className="text-xl text-copa-gold mb-2 font-semibold">
+            Powered by Number Labs AI Intelligence
           </p>
-          <p className="text-sm text-blue-300 mt-2">
-            Multi-persona AI workspace where different roles access the same intelligence through contextual interfaces
+          <p className="text-white/90 max-w-2xl mx-auto">
+            The unified platform for Copa Airlines crew operations across all departments
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
           {personas.map((persona) => {
             const Icon = persona.icon;
             return (
               <button
                 key={persona.role}
                 onClick={() => onSelectRole(persona.role)}
-                className="group relative bg-white/10 backdrop-blur-sm rounded-xl p-6 text-left hover:bg-white/15 transition-all duration-300 hover:scale-105 hover:shadow-2xl border border-white/20"
+                className="bg-white rounded-lg shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 text-left overflow-hidden"
               >
-                <div className={`absolute inset-0 bg-gradient-to-br ${persona.color} opacity-0 group-hover:opacity-10 rounded-xl transition-opacity duration-300`} />
-
-                <div className="relative">
-                  <div className={`inline-flex p-3 rounded-lg bg-gradient-to-br ${persona.color} mb-4`}>
-                    <Icon className="w-8 h-8" />
-                  </div>
-
-                  <h3 className="text-2xl font-bold mb-1">{persona.title}</h3>
-                  <p className="text-blue-300 text-sm mb-4">{persona.subtitle}</p>
-
-                  <div className="space-y-2">
+                <div className="bg-gradient-to-r from-copa-blue to-copa-blue-light p-6">
+                  <Icon className="w-12 h-12 text-copa-gold mb-3" />
+                  <h3 className="text-xl font-bold text-white">{persona.title}</h3>
+                  <p className="text-white/80 text-sm">{persona.subtitle}</p>
+                </div>
+                <div className="p-6">
+                  <ul className="space-y-2 text-sm text-gray-700 mb-6">
                     {persona.capabilities.map((capability, idx) => (
-                      <div key={idx} className="flex items-start gap-2 text-sm">
-                        <div className={`w-1.5 h-1.5 rounded-full bg-gradient-to-br ${persona.color} mt-1.5 flex-shrink-0`} />
-                        <span className="text-blue-100">{capability}</span>
-                      </div>
+                      <li key={idx} className="flex items-start">
+                        <span className="text-copa-gold mr-2">✓</span>
+                        {capability}
+                      </li>
                     ))}
-                  </div>
-
-                  <div className="mt-6 pt-4 border-t border-white/10">
-                    <span className="text-blue-400 text-sm font-medium group-hover:text-blue-300 transition-colors">
-                      Login as {persona.title} →
-                    </span>
+                  </ul>
+                  <div className="w-full bg-copa-blue text-white py-3 rounded-lg hover:bg-copa-blue-light transition-colors font-semibold text-center">
+                    Login as {persona.title}
                   </div>
                 </div>
               </button>
@@ -136,13 +133,18 @@ export default function LandingPage({ onSelectRole }: LandingPageProps) {
           })}
         </div>
 
-        <div className="mt-16 text-center">
-          <div className="inline-flex items-center gap-2 px-6 py-3 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
-            <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-            <span className="text-sm text-blue-200">
+        <div className="mt-12 text-center">
+          <div className="inline-flex items-center gap-2 px-6 py-3 bg-white/10 backdrop-blur-sm rounded-full border border-copa-gold/50">
+            <div className="w-2 h-2 rounded-full bg-copa-gold animate-pulse" />
+            <span className="text-sm text-white">
               Demo Mode - Select any persona to explore the platform
             </span>
           </div>
+        </div>
+
+        <div className="mt-12 text-center text-white/60 text-sm">
+          <p>© 2024 Copa Airlines. All rights reserved.</p>
+          <p className="mt-2 text-copa-gold">AI-Powered Crew Intelligence by Number Labs</p>
         </div>
       </div>
     </div>
