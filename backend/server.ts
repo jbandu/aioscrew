@@ -13,6 +13,26 @@ config();
 const app = express();
 const PORT = parseInt(process.env.PORT || '3001', 10);
 
+// Health check endpoint FIRST - before any middleware that could block it
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'healthy', timestamp: new Date().toISOString() });
+});
+
+// Root endpoint - also before middleware
+app.get('/', (req, res) => {
+  res.json({
+    name: 'Aioscrew AI Agent Backend',
+    version: '1.0.0',
+    status: 'running',
+    endpoints: {
+      health: '/health',
+      agentHealth: '/api/agents/health',
+      validate: 'POST /api/agents/validate',
+      validateClaim: 'POST /api/agents/validate-claim'
+    }
+  });
+});
+
 // Middleware
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
@@ -41,28 +61,8 @@ app.use((req, res, next) => {
   next();
 });
 
-// Health check endpoint (for Railway)
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'healthy', timestamp: new Date().toISOString() });
-});
-
-// Routes
+// API Routes
 app.use('/api/agents', agentRoutes);
-
-// Root endpoint
-app.get('/', (req, res) => {
-  res.json({
-    name: 'Aioscrew AI Agent Backend',
-    version: '1.0.0',
-    status: 'running',
-    endpoints: {
-      health: '/health',
-      agentHealth: '/api/agents/health',
-      validate: 'POST /api/agents/validate',
-      validateClaim: 'POST /api/agents/validate-claim'
-    }
-  });
-});
 
 // 404 handler
 app.use((req, res) => {
