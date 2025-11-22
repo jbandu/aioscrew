@@ -28,29 +28,33 @@ export interface CrewMember {
 
 export interface Trip {
   id: string;
-  date: string;
+  trip_date: string;
   route: string;
-  crewAssigned: string[];
-  flightTime: number;
-  creditHours: number;
-  layover: string;
-  international: boolean;
-  status: 'scheduled' | 'active' | 'completed' | 'cancelled' | 'delayed';
-  disruption?: boolean;
-  crewAffected?: string[];
-  delayMinutes?: number;
+  flight_numbers?: string;
+  flight_time_hours?: number;
+  credit_hours?: number;
+  layover_city?: string;
+  is_international?: boolean;
+  aircraft_type?: string;
+  status: 'scheduled' | 'in-progress' | 'completed' | 'cancelled' | 'delayed';
+  captain_id?: string | null;
+  first_officer_id?: string | null;
+  senior_fa_id?: string | null;
+  junior_fa_id?: string | null;
 }
 
 export interface Claim {
   id: string;
-  crewId: string;
-  type: string;
-  flight: string;
-  date: string;
+  crew_id: string;
+  claim_type: string;
+  trip_id: string;
+  claim_date: string;
   amount: number;
-  status: 'pending' | 'approved' | 'rejected';
-  aiValidation: boolean;
-  explanation: string;
+  status: 'pending' | 'approved' | 'rejected' | 'under-review';
+  ai_validated: boolean;
+  ai_explanation: string;
+  contract_reference?: string;
+  crew_name?: string;
 }
 
 export interface ChatMessage {
