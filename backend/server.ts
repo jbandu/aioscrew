@@ -13,6 +13,11 @@ config();
 const app = express();
 const PORT = parseInt(process.env.PORT || '3001', 10);
 
+// Health check endpoint MUST come before CORS (for Railway health checks)
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'healthy', timestamp: new Date().toISOString() });
+});
+
 // Middleware
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
@@ -25,11 +30,6 @@ app.use((req, res, next) => {
   const timestamp = new Date().toISOString();
   console.log(`[${timestamp}] ${req.method} ${req.path}`);
   next();
-});
-
-// Health check endpoint (for Railway)
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'healthy', timestamp: new Date().toISOString() });
 });
 
 // Routes

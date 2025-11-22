@@ -10,7 +10,7 @@
     "restartPolicyMaxRetries": 10
   },
   "healthcheck": {
-    "path": "/api/agents/health",
+    "path": "/health",
     "timeout": 10,
     "interval": 30
   }
