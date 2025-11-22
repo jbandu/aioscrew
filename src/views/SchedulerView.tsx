@@ -1,11 +1,31 @@
+import { useState } from 'react';
 import { Calendar, Users, DollarSign, AlertTriangle, TrendingDown, Sparkles } from 'lucide-react';
 import ConversationalAI from '../components/ConversationalAI';
 import { crewMembers, trips } from '../data/mockData';
+import RosterBuilderView from './scheduler/RosterBuilderView';
+import CrewManagementView from './scheduler/CrewManagementView';
+import AnalyticsView from './scheduler/AnalyticsView';
 
 export default function SchedulerView() {
+  const [activeSubView, setActiveSubView] = useState<string>('dashboard');
   const uncoveredTrips = trips.filter(t => t.crewAssigned.length === 0);
   const totalCrew = crewMembers.length;
   const totalPairings = trips.length;
+
+  // If roster builder is active, show that view
+  if (activeSubView === 'roster-builder') {
+    return <RosterBuilderView onBack={() => setActiveSubView('dashboard')} />;
+  }
+
+  // If crew management is active, show that view
+  if (activeSubView === 'crew-management') {
+    return <CrewManagementView onBack={() => setActiveSubView('dashboard')} />;
+  }
+
+  // If analytics is active, show that view
+  if (activeSubView === 'analytics') {
+    return <AnalyticsView />;
+  }
 
   return (
     <div className="space-y-6">
@@ -143,28 +163,40 @@ export default function SchedulerView() {
       </div>
 
       <div className="grid md:grid-cols-4 gap-4">
-        <button className="px-6 py-4 bg-white hover:bg-gray-50 text-gray-900 rounded-lg shadow-md transition-colors text-left">
-          <Users className="w-6 h-6 text-purple-600 mb-2" />
+        <button
+          onClick={() => setActiveSubView('roster-builder')}
+          className="px-6 py-4 bg-white hover:bg-gray-50 text-gray-900 rounded-lg shadow-md transition-colors text-left"
+        >
+          <Calendar className="w-6 h-6 text-purple-600 mb-2" />
           <div className="font-semibold">Roster Builder</div>
           <div className="text-xs text-gray-600">Crew assignment tool</div>
         </button>
 
-        <button className="px-6 py-4 bg-white hover:bg-gray-50 text-gray-900 rounded-lg shadow-md transition-colors text-left">
-          <Sparkles className="w-6 h-6 text-blue-600 mb-2" />
-          <div className="font-semibold">AI Optimizer</div>
-          <div className="text-xs text-gray-600">Cost & efficiency analysis</div>
+        <button
+          onClick={() => setActiveSubView('crew-management')}
+          className="px-6 py-4 bg-white hover:bg-gray-50 text-gray-900 rounded-lg shadow-md transition-colors text-left"
+        >
+          <Users className="w-6 h-6 text-blue-600 mb-2" />
+          <div className="font-semibold">Crew Management</div>
+          <div className="text-xs text-gray-600">Directory & qualifications</div>
         </button>
 
-        <button className="px-6 py-4 bg-white hover:bg-gray-50 text-gray-900 rounded-lg shadow-md transition-colors text-left">
-          <Calendar className="w-6 h-6 text-green-600 mb-2" />
+        <button
+          onClick={() => alert('Bidding System - Coming soon!')}
+          className="px-6 py-4 bg-white hover:bg-gray-50 text-gray-900 rounded-lg shadow-md transition-colors text-left"
+        >
+          <Sparkles className="w-6 h-6 text-green-600 mb-2" />
           <div className="font-semibold">Bidding System</div>
           <div className="text-xs text-gray-600">Manage crew bids</div>
         </button>
 
-        <button className="px-6 py-4 bg-white hover:bg-gray-50 text-gray-900 rounded-lg shadow-md transition-colors text-left">
+        <button
+          onClick={() => setActiveSubView('analytics')}
+          className="px-6 py-4 bg-white hover:bg-gray-50 text-gray-900 rounded-lg shadow-md transition-colors text-left"
+        >
           <DollarSign className="w-6 h-6 text-amber-600 mb-2" />
-          <div className="font-semibold">Cost Analytics</div>
-          <div className="text-xs text-gray-600">Budget & forecasting</div>
+          <div className="font-semibold">Analytics & Reports</div>
+          <div className="text-xs text-gray-600">Metrics & forecasting</div>
         </button>
       </div>
     </div>
