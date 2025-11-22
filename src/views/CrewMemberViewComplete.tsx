@@ -1,13 +1,14 @@
-import { useState } from 'react';
 import { Calendar, DollarSign, FileText, Settings as SettingsIcon } from 'lucide-react';
 import ScheduleView from '../components/schedule/ScheduleView';
 import ConversationalAI from '../components/ConversationalAI';
 import { crewMembers } from '../data/mockData';
 
-type TabType = 'dashboard' | 'schedule' | 'pay' | 'documents' | 'settings';
+interface CrewMemberViewCompleteProps {
+  activeView: string;
+  onViewChange: (view: string) => void;
+}
 
-export default function CrewMemberViewComplete() {
-  const [activeTab, setActiveTab] = useState<TabType>('dashboard');
+export default function CrewMemberViewComplete({ activeView, onViewChange }: CrewMemberViewCompleteProps) {
   const currentUser = crewMembers[0];
 
   return (
@@ -19,67 +20,8 @@ export default function CrewMemberViewComplete() {
         </p>
       </div>
 
-      <div className="bg-white rounded-lg shadow-md">
-        <div className="flex space-x-1 border-b p-2">
-          <button
-            onClick={() => setActiveTab('dashboard')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
-              activeTab === 'dashboard'
-                ? 'bg-blue-900 text-white'
-                : 'text-gray-600 hover:bg-gray-100'
-            }`}
-          >
-            <Calendar className="w-4 h-4" />
-            Dashboard
-          </button>
-          <button
-            onClick={() => setActiveTab('schedule')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
-              activeTab === 'schedule'
-                ? 'bg-blue-900 text-white'
-                : 'text-gray-600 hover:bg-gray-100'
-            }`}
-          >
-            <Calendar className="w-4 h-4" />
-            Schedule
-          </button>
-          <button
-            onClick={() => setActiveTab('pay')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
-              activeTab === 'pay'
-                ? 'bg-blue-900 text-white'
-                : 'text-gray-600 hover:bg-gray-100'
-            }`}
-          >
-            <DollarSign className="w-4 h-4" />
-            Pay & Claims
-          </button>
-          <button
-            onClick={() => setActiveTab('documents')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
-              activeTab === 'documents'
-                ? 'bg-blue-900 text-white'
-                : 'text-gray-600 hover:bg-gray-100'
-            }`}
-          >
-            <FileText className="w-4 h-4" />
-            Documents
-          </button>
-          <button
-            onClick={() => setActiveTab('settings')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
-              activeTab === 'settings'
-                ? 'bg-blue-900 text-white'
-                : 'text-gray-600 hover:bg-gray-100'
-            }`}
-          >
-            <SettingsIcon className="w-4 h-4" />
-            Settings
-          </button>
-        </div>
-
-        <div className="min-h-screen">
-          {activeTab === 'dashboard' && (
+      <div>
+        {activeView === 'dashboard' && (
             <div className="p-6 space-y-6">
               <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="bg-white rounded-lg shadow border-l-4 border-green-500 p-4">
@@ -106,7 +48,7 @@ export default function CrewMemberViewComplete() {
 
               <div className="grid md:grid-cols-4 gap-4">
                 <button
-                  onClick={() => setActiveTab('schedule')}
+                  onClick={() => onViewChange('schedule')}
                   className="px-6 py-4 bg-white hover:bg-gray-50 text-gray-900 rounded-lg shadow transition-colors text-left"
                 >
                   <Calendar className="w-6 h-6 text-blue-600 mb-2" />
@@ -114,7 +56,7 @@ export default function CrewMemberViewComplete() {
                   <div className="text-xs text-gray-600">Calendar & trip details</div>
                 </button>
                 <button
-                  onClick={() => setActiveTab('pay')}
+                  onClick={() => onViewChange('pay')}
                   className="px-6 py-4 bg-white hover:bg-gray-50 text-gray-900 rounded-lg shadow transition-colors text-left"
                 >
                   <DollarSign className="w-6 h-6 text-green-600 mb-2" />
@@ -122,7 +64,7 @@ export default function CrewMemberViewComplete() {
                   <div className="text-xs text-gray-600">Pay & per diem claims</div>
                 </button>
                 <button
-                  onClick={() => setActiveTab('documents')}
+                  onClick={() => onViewChange('documents')}
                   className="px-6 py-4 bg-white hover:bg-gray-50 text-gray-900 rounded-lg shadow transition-colors text-left"
                 >
                   <FileText className="w-6 h-6 text-purple-600 mb-2" />
@@ -130,7 +72,7 @@ export default function CrewMemberViewComplete() {
                   <div className="text-xs text-gray-600">Licenses & certificates</div>
                 </button>
                 <button
-                  onClick={() => setActiveTab('settings')}
+                  onClick={() => onViewChange('settings')}
                   className="px-6 py-4 bg-white hover:bg-gray-50 text-gray-900 rounded-lg shadow transition-colors text-left"
                 >
                   <SettingsIcon className="w-6 h-6 text-amber-600 mb-2" />
@@ -146,9 +88,9 @@ export default function CrewMemberViewComplete() {
             </div>
           )}
 
-          {activeTab === 'schedule' && <ScheduleView />}
+        {activeView === 'schedule' && <ScheduleView />}
 
-          {activeTab === 'pay' && (
+        {activeView === 'pay' && (
             <div className="p-6">
               <div className="bg-gradient-to-br from-blue-900 to-blue-800 rounded-xl shadow-xl p-8 text-white mb-6">
                 <div className="flex justify-between items-start mb-6">
@@ -223,7 +165,7 @@ export default function CrewMemberViewComplete() {
             </div>
           )}
 
-          {activeTab === 'documents' && (
+        {activeView === 'documents' && (
             <div className="p-6">
               <h3 className="text-2xl font-bold text-blue-900 mb-6">My Documents</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -306,7 +248,7 @@ export default function CrewMemberViewComplete() {
             </div>
           )}
 
-          {activeTab === 'settings' && (
+        {activeView === 'settings' && (
             <div className="p-6 max-w-4xl mx-auto space-y-6">
               <div className="bg-white rounded-lg shadow p-6">
                 <h3 className="text-lg font-bold text-blue-900 mb-4">Personal Information</h3>
@@ -379,7 +321,6 @@ export default function CrewMemberViewComplete() {
               </div>
             </div>
           )}
-        </div>
       </div>
     </div>
   );

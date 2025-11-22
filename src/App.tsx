@@ -14,9 +14,11 @@ import UnionView from './views/UnionView';
 function App() {
   const [dbInitialized, setDbInitialized] = useState(false);
   const [currentRole, setCurrentRole] = useState<UserRole | null>(null);
+  const [activeView, setActiveView] = useState('dashboard');
 
   const handleSelectRole = (role: UserRole) => {
     setCurrentRole(role);
+    setActiveView('dashboard');
   };
 
   const handleLogout = () => {
@@ -25,7 +27,7 @@ function App() {
 
   const roleViews: Record<UserRole, { component: JSX.Element; title: string }> = {
     'crew-member': {
-      component: <CrewMemberViewComplete />,
+      component: <CrewMemberViewComplete activeView={activeView} onViewChange={setActiveView} />,
       title: 'Crew Member Portal'
     },
     'scheduler': {
@@ -65,7 +67,7 @@ function App() {
       role={currentRole}
       onLogout={handleLogout}
       title={currentView.title}
-      sidebar={<Sidebar role={currentRole} />}
+      sidebar={<Sidebar role={currentRole} activeView={activeView} onViewChange={setActiveView} />}
     >
       {currentView.component}
     </DashboardLayout>
