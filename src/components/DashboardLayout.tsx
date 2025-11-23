@@ -17,7 +17,8 @@ const roleConfig = {
   'controller': { name: 'Crew Controller', color: 'red' },
   'payroll': { name: 'Payroll Admin', color: 'green' },
   'management': { name: 'Operations Manager', color: 'amber' },
-  'union': { name: 'Union Representative', color: 'teal' }
+  'union': { name: 'Union Representative', color: 'teal' },
+  'automation-lab': { name: 'Automation Lab', color: 'cyan' }
 };
 
 export default function DashboardLayout({ role, onLogout, children, sidebar, title }: DashboardLayoutProps) {

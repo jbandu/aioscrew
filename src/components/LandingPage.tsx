@@ -1,6 +1,5 @@
 import { Plane, Calendar, Target, DollarSign, BarChart3, Scale, Building2, Cpu } from 'lucide-react';
 import { UserRole } from '../types';
-import DataGenerationCard from './DataGenerationCard';
 
 interface LandingPageProps {
   onSelectRole: (role: UserRole) => void;
@@ -84,20 +83,33 @@ const personas = [
     ],
     color: 'from-slate-900 via-teal-900 to-cyan-900',
     accent: 'from-teal-500/80 to-cyan-500/80'
-  },
-  {
-    role: 'executive' as UserRole,
-    icon: Building2,
-    title: 'Executive Dashboard',
-    subtitle: 'C-Suite Leadership',
-    capabilities: [
-      'Complete airline operations overview',
-      'Multi-level operational dashboards',
-      'Strategic KPI monitoring'
-    ],
-    color: 'from-slate-900 via-indigo-900 to-slate-900',
-    accent: 'from-indigo-500/80 to-blue-500/80'
-  }
+    },
+    {
+      role: 'executive' as UserRole,
+      icon: Building2,
+      title: 'Executive Dashboard',
+      subtitle: 'C-Suite Leadership',
+      capabilities: [
+        'Complete airline operations overview',
+        'Multi-level operational dashboards',
+        'Strategic KPI monitoring'
+      ],
+      color: 'from-slate-900 via-indigo-900 to-slate-900',
+      accent: 'from-indigo-500/80 to-blue-500/80'
+    },
+    {
+      role: 'automation-lab' as UserRole,
+      icon: Cpu,
+      title: 'Automation Lab',
+      subtitle: 'Agentic Test Data',
+      capabilities: [
+        'Generate multi-year scenario datasets',
+        'Blueprint AI routing & guardrails',
+        'Track run history & compliance logs'
+      ],
+      color: 'from-slate-900 via-cyan-900 to-blue-900',
+      accent: 'from-cyan-500/80 to-blue-500/80'
+    }
 ] as const;
 
 export default function LandingPage({ onSelectRole }: LandingPageProps) {
@@ -119,7 +131,7 @@ export default function LandingPage({ onSelectRole }: LandingPageProps) {
           <p className="text-slate-300 max-w-2xl mx-auto">
             Unified platform for airline crew operations across all departments
           </p>
-        </div>
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
           {personas.map((persona) => {
@@ -152,29 +164,6 @@ export default function LandingPage({ onSelectRole }: LandingPageProps) {
               </button>
             );
           })}
-
-            <div className="col-span-1 md:col-span-2 lg:col-span-3 bg-slate-900/60 border border-cyan-500/30 rounded-2xl shadow-2xl overflow-hidden backdrop-blur">
-              <div className="bg-gradient-to-r from-slate-900 via-cyan-900 to-blue-900 p-6">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                  <div>
-                    <p className="text-sm uppercase tracking-[0.3em] text-cyan-300">Automation Lab</p>
-                    <h3 className="text-2xl font-bold text-white">Generate Rich Demo Data</h3>
-                    <p className="text-cyan-100/80 text-sm max-w-2xl">
-                      Seed the platform with realistic crew, trip, and claim datasets in minutes. Optimized for Ollama,
-                      with seamless fallback to premium Anthropic models when you need extra reasoning power.
-                    </p>
-                  </div>
-                  <div className="p-4 bg-white/10 rounded-2xl w-fit self-start">
-                    <Cpu className="w-10 h-10 text-cyan-200" />
-                  </div>
-                </div>
-              </div>
-              <div className="p-6 bg-slate-950/40">
-                <div className="rounded-2xl border border-white/5 bg-slate-900/40 shadow-inner p-4">
-                  <DataGenerationCard />
-                </div>
-              </div>
-            </div>
         </div>
 
         <div className="mt-12 text-center">

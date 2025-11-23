@@ -5,7 +5,8 @@ export type UserRole =
   | 'payroll'
   | 'management'
   | 'union'
-  | 'executive';
+  | 'executive'
+  | 'automation-lab';
 
 export interface CrewMember {
   id: string;

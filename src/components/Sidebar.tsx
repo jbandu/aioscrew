@@ -1,4 +1,4 @@
-import { Home, Calendar, Users, DollarSign, BarChart3, FileText, Settings } from 'lucide-react';
+import { Home, Calendar, Users, DollarSign, BarChart3, FileText, Settings, Cpu, Zap, History } from 'lucide-react';
 import { UserRole } from '../types';
 
 interface SidebarProps {
@@ -29,27 +29,32 @@ const sidebarMenus: Record<UserRole, Array<{ icon: any; label: string; view: str
     { icon: FileText, label: 'Disruptions', view: 'disruptions' },
     { icon: Settings, label: 'Settings', view: 'settings' }
   ],
-  'payroll': [
-    { icon: Home, label: 'Payroll Dashboard', view: 'dashboard' },
-    { icon: FileText, label: 'Claims Review', view: 'claims' },
-    { icon: DollarSign, label: 'Payments', view: 'payments' },
-    { icon: BarChart3, label: 'Reports', view: 'reports' },
-    { icon: Settings, label: 'Settings', view: 'settings' }
-  ],
-  'management': [
-    { icon: Home, label: 'Executive Dashboard', view: 'dashboard' },
-    { icon: BarChart3, label: 'Analytics', view: 'analytics' },
-    { icon: DollarSign, label: 'Cost Management', view: 'costs' },
-    { icon: Users, label: 'Workforce Planning', view: 'workforce' },
-    { icon: Settings, label: 'Settings', view: 'settings' }
-  ],
-  'union': [
-    { icon: Home, label: 'Compliance Dashboard', view: 'dashboard' },
-    { icon: FileText, label: 'Violations', view: 'violations' },
-    { icon: Users, label: 'Grievances', view: 'grievances' },
-    { icon: BarChart3, label: 'Reports', view: 'reports' },
-    { icon: Settings, label: 'Settings', view: 'settings' }
-  ]
+    'payroll': [
+      { icon: Home, label: 'Payroll Dashboard', view: 'dashboard' },
+      { icon: FileText, label: 'Claims Review', view: 'claims' },
+      { icon: DollarSign, label: 'Payments', view: 'payments' },
+      { icon: BarChart3, label: 'Reports', view: 'reports' },
+      { icon: Settings, label: 'Settings', view: 'settings' }
+    ],
+    'management': [
+      { icon: Home, label: 'Executive Dashboard', view: 'dashboard' },
+      { icon: BarChart3, label: 'Analytics', view: 'analytics' },
+      { icon: DollarSign, label: 'Cost Management', view: 'costs' },
+      { icon: Users, label: 'Workforce Planning', view: 'workforce' },
+      { icon: Settings, label: 'Settings', view: 'settings' }
+    ],
+    'union': [
+      { icon: Home, label: 'Compliance Dashboard', view: 'dashboard' },
+      { icon: FileText, label: 'Violations', view: 'violations' },
+      { icon: Users, label: 'Grievances', view: 'grievances' },
+      { icon: BarChart3, label: 'Reports', view: 'reports' },
+      { icon: Settings, label: 'Settings', view: 'settings' }
+    ],
+    'automation-lab': [
+      { icon: Cpu, label: 'Generator', view: 'dashboard' },
+      { icon: Zap, label: 'Blueprints', view: 'blueprints' },
+      { icon: History, label: 'Run History', view: 'history' }
+    ]
 };
 
 export default function Sidebar({ role, activeView, onViewChange }: SidebarProps) {

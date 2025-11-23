@@ -11,6 +11,7 @@ import PayrollViewImproved from './views/PayrollViewImproved';
 import ManagementView from './views/ManagementView';
 import UnionView from './views/UnionView';
 import ExecutiveDashboard from './components/executive/ExecutiveDashboard';
+import AutomationLabView from './views/AutomationLabView';
 import { LogOut } from 'lucide-react';
 
 function App() {
@@ -56,6 +57,10 @@ function App() {
     'union': {
       component: <UnionView />,
       title: 'Union Compliance Center'
+    },
+    'automation-lab': {
+      component: <AutomationLabView activeView={activeView} onViewChange={setActiveView} />,
+      title: 'Automation Lab'
     },
     'executive': {
       component: <ExecutiveDashboard />,
