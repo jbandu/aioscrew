@@ -143,6 +143,7 @@ httpServer.listen(PORT, '0.0.0.0', () => {
   console.log(`🔌 WebSocket: Enabled for real-time updates`);
   console.log(`🔑 Claude API: ${process.env.ANTHROPIC_API_KEY ? 'Configured ✓' : 'Missing ✗'}`);
   console.log(`💾 Database: ${process.env.DATABASE_URL ? 'Connected ✓' : 'Missing ✗'}`);
+  console.log(`📊 Neo4j: ${process.env.NEO4J_URI ? 'Configured ✓' : 'Missing ✗'}`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log('================================');
   console.log(`✅ Server is listening and ready to accept connections\n`);
@@ -155,6 +156,37 @@ httpServer.on('error', (error: NodeJS.ErrnoException) => {
     console.error(`Port ${PORT} is already in use`);
   }
   process.exit(1);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', async () => {
+  console.log('SIGTERM received, shutting down gracefully...');
+  server.close(async () => {
+    try {
+      const { closeNeo4jDriver } = await import('./services/neo4j-service.js');
+      await closeNeo4jDriver();
+      console.log('✅ Server closed gracefully');
+      process.exit(0);
+    } catch (error) {
+      console.error('Error during shutdown:', error);
+      process.exit(1);
+    }
+  });
+});
+
+process.on('SIGINT', async () => {
+  console.log('\nSIGINT received, shutting down gracefully...');
+  server.close(async () => {
+    try {
+      const { closeNeo4jDriver } = await import('./services/neo4j-service.js');
+      await closeNeo4jDriver();
+      console.log('✅ Server closed gracefully');
+      process.exit(0);
+    } catch (error) {
+      console.error('Error during shutdown:', error);
+      process.exit(1);
+    }
+  });
 });
 
 export default app;
