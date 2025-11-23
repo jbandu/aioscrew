@@ -1,4 +1,4 @@
-import { Plane, Calendar, Target, DollarSign, BarChart3, Scale, Building2 } from 'lucide-react';
+import { Plane, Calendar, Target, DollarSign, BarChart3, Scale, Building2, Cpu } from 'lucide-react';
 import { UserRole } from '../types';
 import DataGenerationCard from './DataGenerationCard';
 
@@ -17,7 +17,8 @@ const personas = [
       'Submit & track pay claims',
       'Check training requirements'
     ],
-    color: 'from-blue-500 to-blue-600'
+    color: 'from-slate-900 via-blue-900 to-indigo-900',
+    accent: 'from-blue-500/80 to-cyan-500/80'
   },
   {
     role: 'scheduler' as UserRole,
@@ -29,7 +30,8 @@ const personas = [
       'Pairing assignment & bidding',
       'Cost analysis & forecasting'
     ],
-    color: 'from-purple-500 to-purple-600'
+    color: 'from-slate-900 via-violet-900 to-purple-900',
+    accent: 'from-purple-500/80 to-pink-500/80'
   },
   {
     role: 'controller' as UserRole,
@@ -41,7 +43,8 @@ const personas = [
       'Instant crew reassignment',
       'Reserve crew coordination'
     ],
-    color: 'from-red-500 to-red-600'
+    color: 'from-slate-900 via-rose-900 to-red-900',
+    accent: 'from-rose-500/80 to-orange-500/80'
   },
   {
     role: 'payroll' as UserRole,
@@ -53,7 +56,8 @@ const personas = [
       'Automated pay calculations',
       'Compliance audit trails'
     ],
-    color: 'from-green-500 to-green-600'
+    color: 'from-slate-900 via-emerald-900 to-teal-900',
+    accent: 'from-emerald-500/80 to-teal-500/80'
   },
   {
     role: 'management' as UserRole,
@@ -65,7 +69,8 @@ const personas = [
       'Cost optimization insights',
       'Predictive staffing analytics'
     ],
-    color: 'from-amber-500 to-amber-600'
+    color: 'from-slate-900 via-amber-900 to-orange-900',
+    accent: 'from-amber-500/80 to-orange-500/80'
   },
   {
     role: 'union' as UserRole,
@@ -77,7 +82,8 @@ const personas = [
       'Violation detection & alerts',
       'Member advocacy analytics'
     ],
-    color: 'from-teal-500 to-teal-600'
+    color: 'from-slate-900 via-teal-900 to-cyan-900',
+    accent: 'from-teal-500/80 to-cyan-500/80'
   },
   {
     role: 'executive' as UserRole,
@@ -89,9 +95,10 @@ const personas = [
       'Multi-level operational dashboards',
       'Strategic KPI monitoring'
     ],
-    color: 'from-indigo-500 to-indigo-600'
+    color: 'from-slate-900 via-indigo-900 to-slate-900',
+    accent: 'from-indigo-500/80 to-blue-500/80'
   }
-];
+] as const;
 
 export default function LandingPage({ onSelectRole }: LandingPageProps) {
   return (
@@ -114,46 +121,60 @@ export default function LandingPage({ onSelectRole }: LandingPageProps) {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
           {personas.map((persona) => {
             const Icon = persona.icon;
             return (
               <button
                 key={persona.role}
                 onClick={() => onSelectRole(persona.role)}
-                className="bg-white rounded-lg shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 text-left overflow-hidden"
+                  className="bg-slate-900/60 border border-white/10 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 text-left overflow-hidden backdrop-blur"
               >
-                <div className={`bg-gradient-to-r ${persona.color} p-6`}>
-                  <Icon className="w-12 h-12 text-white mb-3" />
-                  <h3 className="text-xl font-bold text-white">{persona.title}</h3>
-                  <p className="text-white/80 text-sm">{persona.subtitle}</p>
+                  <div className={`relative bg-gradient-to-br ${persona.color} p-6`}>
+                    <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.3),_transparent_45%)]" />
+                    <Icon className="relative w-12 h-12 text-white mb-3" />
+                    <h3 className="relative text-xl font-bold text-white">{persona.title}</h3>
+                    <p className="relative text-white/80 text-sm">{persona.subtitle}</p>
                 </div>
-                <div className="p-6">
-                  <ul className="space-y-2 text-sm text-gray-700 mb-6">
+                  <div className="p-6 bg-slate-950/40">
+                    <ul className="space-y-2 text-sm text-slate-200 mb-6">
                     {persona.capabilities.map((capability, idx) => (
                       <li key={idx} className="flex items-start">
-                        <span className="text-green-600 mr-2">✓</span>
+                          <span className="text-emerald-300 mr-2">✓</span>
                         {capability}
                       </li>
                     ))}
                   </ul>
-                  <div className={`w-full bg-gradient-to-r ${persona.color} text-white py-3 rounded-lg hover:opacity-90 transition-opacity font-semibold text-center`}>
+                    <div className={`w-full bg-gradient-to-r ${persona.accent} border border-white/10 text-white/90 py-3 rounded-lg hover:opacity-90 transition-opacity font-semibold text-center`}>
                     Login as {persona.title}
                   </div>
                 </div>
               </button>
             );
           })}
-        </div>
 
-        <div className="mt-16 max-w-5xl mx-auto space-y-4">
-          <div className="text-center">
-            <h2 className="text-3xl font-bold text-white mb-2">Generate Rich Demo Data</h2>
-            <p className="text-blue-200">
-              Use the AI generator card (prefers local Ollama) to seed crew, trip, and claim records instantly.
-            </p>
-          </div>
-          <DataGenerationCard />
+            <div className="col-span-1 md:col-span-2 lg:col-span-3 bg-slate-900/60 border border-cyan-500/30 rounded-2xl shadow-2xl overflow-hidden backdrop-blur">
+              <div className="bg-gradient-to-r from-slate-900 via-cyan-900 to-blue-900 p-6">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <div>
+                    <p className="text-sm uppercase tracking-[0.3em] text-cyan-300">Automation Lab</p>
+                    <h3 className="text-2xl font-bold text-white">Generate Rich Demo Data</h3>
+                    <p className="text-cyan-100/80 text-sm max-w-2xl">
+                      Seed the platform with realistic crew, trip, and claim datasets in minutes. Optimized for Ollama,
+                      with seamless fallback to premium Anthropic models when you need extra reasoning power.
+                    </p>
+                  </div>
+                  <div className="p-4 bg-white/10 rounded-2xl w-fit self-start">
+                    <Cpu className="w-10 h-10 text-cyan-200" />
+                  </div>
+                </div>
+              </div>
+              <div className="p-6 bg-slate-950/40">
+                <div className="rounded-2xl border border-white/5 bg-slate-900/40 shadow-inner p-4">
+                  <DataGenerationCard />
+                </div>
+              </div>
+            </div>
         </div>
 
         <div className="mt-12 text-center">
