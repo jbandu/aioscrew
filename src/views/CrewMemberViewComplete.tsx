@@ -242,7 +242,7 @@ export default function CrewMemberViewComplete({ activeView, onViewChange }: Cre
                               claim.status === 'rejected' ? 'text-red-600' :
                               'text-orange-600'
                             }`}>
-                              ${claim.amount.toFixed(2)}
+                              ${typeof claim.amount === 'number' ? claim.amount.toFixed(2) : parseFloat(claim.amount || '0').toFixed(2)}
                             </p>
                             <span className={`px-2 py-1 rounded text-xs font-semibold ${
                               claim.status === 'approved' ? 'bg-green-100 text-green-800' :
