@@ -76,7 +76,7 @@ export async function validateClaimWithAgents(claim: ClaimData): Promise<AgentVa
           details: [
             'Destination: GUA (Guatemala City) - Confirmed international',
             'CBA Section 12.4 applies: $125 per international flight',
-            `Amount calculation: CORRECT ($${claim.amount.toFixed(2)})`
+            `Amount calculation: CORRECT ($${(typeof claim.amount === 'number' ? claim.amount : parseFloat(claim.amount || '0')).toFixed(2)})`
           ],
           confidence: 1.0,
           color: 'bg-green-600'
@@ -141,8 +141,8 @@ export async function validateClaimWithAgents(claim: ClaimData): Promise<AgentVa
           summary: 'Detected amount discrepancy',
           details: [
             `Calculated per diem: $75 (1 night × $75/night)`,
-            `Claimed amount: $${claim.amount.toFixed(2)}`,
-            `Difference: +$${(claim.amount - 75).toFixed(2)} (${Math.round(((claim.amount - 75) / 75) * 100)}% over)`
+            `Claimed amount: $${(typeof claim.amount === 'number' ? claim.amount : parseFloat(claim.amount || '0')).toFixed(2)}`,
+            `Difference: +$${((typeof claim.amount === 'number' ? claim.amount : parseFloat(claim.amount || '0')) - 75).toFixed(2)} (${Math.round((((typeof claim.amount === 'number' ? claim.amount : parseFloat(claim.amount || '0')) - 75) / 75) * 100)}% over)`
           ],
           confidence: 0.3,
           color: 'bg-purple-600'
@@ -167,7 +167,7 @@ export async function validateClaimWithAgents(claim: ClaimData): Promise<AgentVa
         {
           severity: 'high',
           title: 'Amount Discrepancy',
-          description: `Claimed amount ($${claim.amount.toFixed(2)}) exceeds calculated per diem ($75/night × 1 night = $75). Difference: +$${(claim.amount - 75).toFixed(2)} (${Math.round(((claim.amount - 75) / 75) * 100)}% over)`,
+          description: `Claimed amount ($${(typeof claim.amount === 'number' ? claim.amount : parseFloat(claim.amount || '0')).toFixed(2)}) exceeds calculated per diem ($75/night × 1 night = $75). Difference: +$${((typeof claim.amount === 'number' ? claim.amount : parseFloat(claim.amount || '0')) - 75).toFixed(2)} (${Math.round((((typeof claim.amount === 'number' ? claim.amount : parseFloat(claim.amount || '0')) - 75) / 75) * 100)}% over)`,
           suggestedAction: 'Verify if extended layover or international rate applies'
         },
         {

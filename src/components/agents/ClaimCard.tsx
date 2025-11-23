@@ -55,7 +55,7 @@ export default function ClaimCard({ claim, onApprove, onReject, onRequestInfo }:
               )}
             </div>
             <p className="text-sm text-gray-600">
-              {claim.crewMember} • {claim.type} • {claim.flight} • ${claim.amount.toFixed(2)}
+              {claim.crewMember} • {claim.type} • {claim.flight} • ${typeof claim.amount === 'number' ? claim.amount.toFixed(2) : parseFloat(claim.amount || '0').toFixed(2)}
             </p>
             <p className="text-xs text-gray-500 mt-1">
               Submitted: {claim.submittedDate.toLocaleDateString()} at {claim.submittedDate.toLocaleTimeString()}
@@ -188,7 +188,9 @@ export default function ClaimCard({ claim, onApprove, onReject, onRequestInfo }:
             <div>
               <p className="text-gray-600">Average Amount</p>
               <p className="font-bold text-blue-900">
-                ${validation.historicalAnalysis.averageAmount.toFixed(2)}
+                ${typeof validation.historicalAnalysis.averageAmount === 'number' 
+                  ? validation.historicalAnalysis.averageAmount.toFixed(2) 
+                  : parseFloat(validation.historicalAnalysis.averageAmount || '0').toFixed(2)}
               </p>
             </div>
             <div>

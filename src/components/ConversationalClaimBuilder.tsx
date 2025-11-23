@@ -277,7 +277,8 @@ What claim would you like to submit?`,
       }
 
       if (data.amount) {
-        summary += `**Amount:** $${data.amount.toFixed(2)}\n`;
+        const amount = typeof data.amount === 'number' ? data.amount : parseFloat(data.amount || '0');
+        summary += `**Amount:** $${amount.toFixed(2)}\n`;
       }
 
       summary += `\nWould you like to proceed with this claim? I'll prepare it for your final review.`;

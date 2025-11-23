@@ -100,8 +100,10 @@ class WebSocketService {
     }
 
     this.isConnecting = true;
+    // Use wss:// for HTTPS pages, ws:// for HTTP pages
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = import.meta.env.VITE_WS_URL ||
-      (import.meta.env.DEV ? 'ws://localhost:3001/ws' : `ws://${window.location.host}/ws`);
+      (import.meta.env.DEV ? 'ws://localhost:3001/ws' : `${protocol}//${window.location.host}/ws`);
 
     console.log(`Connecting to WebSocket: ${wsUrl}`);
 
