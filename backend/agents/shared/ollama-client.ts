@@ -37,7 +37,7 @@ export async function isOllamaAvailable(): Promise<boolean> {
     }
 
     const data = await response.json() as { models?: Array<{ name: string }> };
-    return data.models && Array.isArray(data.models) && data.models.length > 0;
+    return !!(data.models && Array.isArray(data.models) && data.models.length > 0);
   } catch (error) {
     // Ollama not running or not accessible
     return false;
