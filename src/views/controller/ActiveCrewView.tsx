@@ -1,10 +1,13 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import {
   ArrowLeft, Users, Plane, Clock, CheckCircle, AlertCircle,
   Phone, MessageSquare, Mail, TrendingUp, Activity, Filter,
-  Download, Send, UserCheck
+  Download, Send, UserCheck, Wifi, WifiOff
 } from 'lucide-react';
 import { crewMembers, trips } from '../../data/mockData';
+import { useRealTimeUpdates, useCrewStatusUpdates, useDutyTimeWarnings, formatTimeSince } from '../../hooks/useRealTimeUpdates';
+import { controllerService } from '../../services/controller-service';
+import { aiControllerAgent } from '../../services/ai-controller-agent';
 
 interface ActiveCrewViewProps {
   onBack: () => void;
@@ -12,6 +15,9 @@ interface ActiveCrewViewProps {
 
 export default function ActiveCrewView({ onBack }: ActiveCrewViewProps) {
   const [activeTab, setActiveTab] = useState('on-duty');
+  const [crewStatuses, setCrewStatuses] = useState<any[]>([]);
+  const [dutyTimeWarnings, setDutyTimeWarnings] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const tabs = [
     { id: 'on-duty', label: 'On Duty Overview' },
@@ -20,11 +26,55 @@ export default function ActiveCrewView({ onBack }: ActiveCrewViewProps) {
     { id: 'communications', label: 'Crew Communications' }
   ];
 
+  // Real-time data refresh
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const crew = await controllerService.getCrewStatuses();
+      setCrewStatuses(crew);
+
+      // Identify crew with duty time warnings
+      const warnings = crew.filter(c =>
+        c.dutyTime / c.maxDutyTime >= 0.80
+      );
+      setDutyTimeWarnings(warnings);
+    } catch (error) {
+      console.error('Error fetching crew data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Real-time updates
+  const { isConnected, timeSinceUpdate, manualRefresh } = useRealTimeUpdates({
+    refreshInterval: 10000,
+    enableWebSocket: true,
+    onRefresh: fetchData
+  });
+
+  // Subscribe to crew status updates
+  useCrewStatusUpdates((update) => {
+    setCrewStatuses(prev =>
+      prev.map(c => c.id === update.crewId ? { ...c, ...update } : c)
+    );
+  });
+
+  // Subscribe to duty time warnings
+  useDutyTimeWarnings((warning) => {
+    console.log('Duty time warning:', warning);
+    // Add to warnings if not already present
+    setDutyTimeWarnings(prev => {
+      const exists = prev.find(w => w.crewId === warning.crewId);
+      if (exists) return prev;
+      return [...prev, warning];
+    });
+  });
+
   // Calculate statistics
-  const activeCrew = crewMembers.filter(c => c.status === 'active');
-  const inFlightCrew = Math.floor(activeCrew.length * 0.25);
-  const preFlightCrew = Math.floor(activeCrew.length * 0.08);
-  const layoverCrew = Math.floor(activeCrew.length * 0.33);
+  const activeCrew = crewStatuses;
+  const inFlightCrew = crewStatuses.filter(c => c.status === 'in-flight').length;
+  const preFlightCrew = crewStatuses.filter(c => c.status === 'pre-flight').length;
+  const layoverCrew = crewStatuses.filter(c => c.status === 'layover').length;
 
   return (
     <div className="space-y-6">
