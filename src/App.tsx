@@ -33,7 +33,7 @@ function App() {
       title: 'Crew Member Portal'
     },
     'scheduler': {
-      component: <SchedulerView />,
+      component: <SchedulerView activeView={activeView} onViewChange={setActiveView} />,
       title: 'Crew Scheduler Workspace'
     },
     'controller': {
