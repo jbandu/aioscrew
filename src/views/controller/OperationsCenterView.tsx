@@ -1,10 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   ArrowLeft, AlertCircle, CheckCircle, Clock, MapPin, Plane,
   Users, Phone, MessageSquare, RefreshCw, Settings, Bell,
-  TrendingUp, Activity, Radio
+  TrendingUp, Activity, Radio, Wifi, WifiOff
 } from 'lucide-react';
 import { trips, crewMembers, alerts } from '../../data/mockData';
+import { useRealTimeUpdates, useDisruptionAlerts, formatTimeSince } from '../../hooks/useRealTimeUpdates';
+import { controllerService } from '../../services/controller-service';
+import { aiControllerAgent } from '../../services/ai-controller-agent';
 
 interface OperationsCenterViewProps {
   onBack: () => void;
@@ -12,6 +15,11 @@ interface OperationsCenterViewProps {
 
 export default function OperationsCenterView({ onBack }: OperationsCenterViewProps) {
   const [activeTab, setActiveTab] = useState('live-dashboard');
+  const [flightStatuses, setFlightStatuses] = useState<any[]>([]);
+  const [crewStatuses, setCrewStatuses] = useState<any[]>([]);
+  const [disruptions, setDisruptions] = useState<any[]>([]);
+  const [aiRecommendations, setAiRecommendations] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const tabs = [
     { id: 'live-dashboard', label: 'Live Dashboard' },
@@ -20,14 +28,60 @@ export default function OperationsCenterView({ onBack }: OperationsCenterViewPro
     { id: 'activity-timeline', label: 'Activity Timeline' }
   ];
 
-  // Calculate real-time statistics
-  const operatingFlights = trips.filter(t => t.status === 'scheduled' || t.status === 'in-progress').length;
-  const delayedFlights = trips.filter(t => t.status === 'delayed').length;
-  const cancelledFlights = trips.filter(t => t.status === 'cancelled').length;
-  const activeAlerts = alerts.filter(a => !a.resolved);
-  const activeCrew = crewMembers.filter(c => c.status === 'active').length;
-  const inFlightCrew = Math.floor(activeCrew * 0.25); // 25% in flight
-  const onReserve = crewMembers.filter(c => c.base === 'PTY').length;
+  // Real-time data refresh
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const [flights, crew, disruptionsData] = await Promise.all([
+        controllerService.getFlightStatuses({ timeRange: 'next-12-hours' }),
+        controllerService.getCrewStatuses({ dutyTimeWarning: true }),
+        controllerService.getDisruptions(false)
+      ]);
+
+      setFlightStatuses(flights);
+      setCrewStatuses(crew);
+      setDisruptions(disruptionsData);
+
+      // Get AI recommendations for active disruptions
+      if (disruptionsData.length > 0) {
+        const recommendations = await Promise.all(
+          disruptionsData.slice(0, 3).map(d =>
+            aiControllerAgent.analyzeDisruption(d.id, d)
+          )
+        );
+        setAiRecommendations(recommendations);
+      }
+    } catch (error) {
+      console.error('Error fetching operations data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Use real-time updates hook
+  const { isConnected, timeSinceUpdate, manualRefresh } = useRealTimeUpdates({
+    refreshInterval: 10000, // 10 seconds
+    enableWebSocket: true,
+    onRefresh: fetchData
+  });
+
+  // Subscribe to disruption alerts
+  useDisruptionAlerts((alert) => {
+    console.log('New disruption alert:', alert);
+    // Trigger data refresh when new alert arrives
+    fetchData();
+  });
+
+  // Calculate real-time statistics from fetched data
+  const operatingFlights = flightStatuses.filter(f =>
+    f.status === 'scheduled' || f.status === 'boarding' || f.status === 'in-flight'
+  ).length;
+  const delayedFlights = flightStatuses.filter(f => f.status === 'delayed').length;
+  const cancelledFlights = flightStatuses.filter(f => f.status === 'cancelled').length;
+  const activeAlerts = disruptions.filter(d => d.status === 'active');
+  const activeCrew = crewStatuses.length;
+  const inFlightCrew = crewStatuses.filter(c => c.status === 'in-flight').length;
+  const onReserve = crewStatuses.filter(c => c.status === 'reserve').length;
 
   return (
     <div className="space-y-6">
@@ -45,8 +99,18 @@ export default function OperationsCenterView({ onBack }: OperationsCenterViewPro
             <h2 className="text-3xl font-bold mb-2">Operations Control Center</h2>
             <div className="flex items-center gap-4 text-red-100">
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                <span>LIVE • Updated 3 seconds ago</span>
+                {isConnected ? (
+                  <>
+                    <Wifi className="w-4 h-4 text-green-400" />
+                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                    <span>LIVE • Updated {formatTimeSince(timeSinceUpdate)}</span>
+                  </>
+                ) : (
+                  <>
+                    <WifiOff className="w-4 h-4 text-amber-400" />
+                    <span>Polling Mode • Updated {formatTimeSince(timeSinceUpdate)}</span>
+                  </>
+                )}
               </div>
               <span>|</span>
               <span>{new Date().toLocaleString('en-US', {
@@ -55,12 +119,21 @@ export default function OperationsCenterView({ onBack }: OperationsCenterViewPro
             </div>
           </div>
           <div className="flex gap-2">
-            <button className="px-4 py-2 bg-red-800 hover:bg-red-900 rounded-lg flex items-center gap-2 transition-colors">
-              <RefreshCw className="w-4 h-4" />
+            <button
+              onClick={() => manualRefresh()}
+              disabled={isLoading}
+              className="px-4 py-2 bg-red-800 hover:bg-red-900 rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
               Refresh
             </button>
             <button className="px-4 py-2 bg-red-800 hover:bg-red-900 rounded-lg flex items-center gap-2 transition-colors">
               <Bell className="w-4 h-4" />
+              {activeAlerts.length > 0 && (
+                <span className="px-2 py-0.5 bg-red-600 text-white rounded-full text-xs font-bold">
+                  {activeAlerts.length}
+                </span>
+              )}
               Alerts
             </button>
           </div>
@@ -96,8 +169,10 @@ export default function OperationsCenterView({ onBack }: OperationsCenterViewPro
               <div className="bg-gradient-to-r from-red-50 to-red-100 border-l-4 border-red-600 rounded-lg p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-3 h-3 bg-red-600 rounded-full animate-pulse" />
-                    <span className="text-lg font-bold text-red-900">LIVE • Updated 3 seconds ago</span>
+                    <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-red-600 animate-pulse' : 'bg-amber-600'}`} />
+                    <span className="text-lg font-bold text-red-900">
+                      {isConnected ? 'LIVE' : 'POLLING'} • Updated {formatTimeSince(timeSinceUpdate)}
+                    </span>
                   </div>
                   <div className="text-sm text-red-800">
                     <span className="font-bold">{operatingFlights} FLIGHTS OPERATING</span>
