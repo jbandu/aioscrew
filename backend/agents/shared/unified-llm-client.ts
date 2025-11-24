@@ -109,8 +109,16 @@ export async function callUnifiedLLM(options: UnifiedLLMOptions): Promise<Unifie
   // Estimate input tokens for cost warnings
   const estimatedInputTokens = Math.ceil((systemPrompt.length + userPrompt.length) / 4);
 
+  // Track which providers to skip (e.g., all Anthropic models after credit error)
+  const skipProviders = new Set<string>();
+
   // Try each provider in priority order
   for (const config of configs) {
+    // Skip providers marked for skipping
+    const providerKey = `${config.provider}/${config.model}`;
+    if (skipProviders.has(providerKey)) {
+      continue;
+    }
     // Skip if forced to specific provider
     if (forceProvider && config.provider !== forceProvider) {
       continue;
@@ -192,16 +200,67 @@ export async function callUnifiedLLM(options: UnifiedLLMOptions): Promise<Unifie
       console.warn(`⚠️  Unknown provider: ${config.provider}/${config.model}, skipping...`);
       continue;
 
-    } catch (error) {
+    } catch (error: any) {
+      const errorMessage = error?.message || String(error);
+      
+      // Check if this is a credit balance error - don't retry other Anthropic models
+      if (error?.isCreditError) {
+        console.error(`❌ Credit balance error with ${config.provider}/${config.model}: ${errorMessage}`);
+        console.warn(`⚠️  Skipping remaining Anthropic models due to credit balance issue`);
+        // Mark all remaining Anthropic providers to skip
+        for (const remainingConfig of configs) {
+          if (remainingConfig.provider === 'anthropic') {
+            skipProviders.add(`${remainingConfig.provider}/${remainingConfig.model}`);
+          }
+        }
+        continue;
+      }
+      
+      // Check if this is an auth error - don't retry other Anthropic models
+      if (error?.isAuthError) {
+        console.error(`❌ Authentication error with ${config.provider}/${config.model}: ${errorMessage}`);
+        console.warn(`⚠️  Skipping remaining Anthropic models due to authentication issue`);
+        // Mark all remaining Anthropic providers to skip
+        for (const remainingConfig of configs) {
+          if (remainingConfig.provider === 'anthropic') {
+            skipProviders.add(`${remainingConfig.provider}/${remainingConfig.model}`);
+          }
+        }
+        continue;
+      }
+      
       console.error(`❌ Error with ${config.provider}/${config.model}:`, error);
       // Continue to next provider
       continue;
     }
   }
 
-  // Build list of attempted providers for better error message
-  const attemptedProviders = configs.map(c => `${c.provider}/${c.model}`).join(', ');
-  throw new Error(`All LLM providers failed for agent type: ${agentType}. Attempted: ${attemptedProviders}`);
+  // Build list of attempted providers for better error message (excluding skipped ones)
+  const attemptedProviders = configs
+    .filter(c => !skipProviders.has(`${c.provider}/${c.model}`))
+    .map(c => `${c.provider}/${c.model}`)
+    .join(', ');
+  
+  // Check if we have any credit/auth errors (check if any Anthropic providers were attempted)
+  const hasCreditError = configs.some(c => c.provider === 'anthropic' && !skipProviders.has(`${c.provider}/${c.model}`));
+  
+  let errorMessage = `All LLM providers failed for agent type: ${agentType}. Attempted: ${attemptedProviders}`;
+  
+  if (hasCreditError) {
+    errorMessage += '\n\n💡 SUGGESTIONS:';
+    errorMessage += '\n   1. Add credits to your Anthropic account at https://console.anthropic.com/';
+    errorMessage += '\n   2. Set up Ollama locally for free local inference (see OLLAMA_SETUP.md)';
+    errorMessage += '\n   3. Check your ANTHROPIC_API_KEY environment variable';
+  } else {
+    errorMessage += '\n\n💡 SUGGESTIONS:';
+    errorMessage += '\n   1. Set up Ollama locally for free local inference (see OLLAMA_SETUP.md)';
+    errorMessage += '\n   2. Check your API keys and provider configurations';
+  }
+  
+  const finalError = new Error(errorMessage);
+  (finalError as any).allProvidersFailed = true;
+  (finalError as any).attemptedProviders = attemptedProviders;
+  throw finalError;
 }
 
 /**
