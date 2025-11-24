@@ -65,6 +65,9 @@ COPY --from=backend-builder /app/backend/dist ./dist
 # Copy built frontend from frontend-builder
 COPY --from=frontend-builder /app/frontend/dist ./public
 
+# Set production environment
+ENV NODE_ENV=production
+
 # Expose port (Railway will set PORT env var, typically 8080)
 EXPOSE 8080
 
