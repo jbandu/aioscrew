@@ -1,8 +1,24 @@
 import { Scale, AlertTriangle, CheckCircle, DollarSign, Clock, TrendingUp } from 'lucide-react';
 import ConversationalAI from '../components/ConversationalAI';
 import { crewMembers } from '../data/mockData';
+import CBADocumentUpload from '../components/cba/CBADocumentUpload';
+import CBAChat from '../components/cba/CBAChat';
 
-export default function UnionView() {
+interface UnionViewProps {
+  activeView?: string;
+}
+
+export default function UnionView({ activeView = 'dashboard' }: UnionViewProps) {
+  // Handle CBA-specific views
+  if (activeView === 'cba-upload') {
+    return <CBADocumentUpload />;
+  }
+
+  if (activeView === 'cba-chat') {
+    return <CBAChat />;
+  }
+
+  // Default dashboard view
   const totalCrew = crewMembers.length;
   const avgPay = Math.round(crewMembers.reduce((sum, c) => sum + c.ytdEarnings, 0) / totalCrew);
   const violations = 4;

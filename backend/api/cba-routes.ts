@@ -85,10 +85,44 @@ router.post('/upload', upload.single('document'), async (req, res) => {
 router.post('/parse/:documentId', async (req, res) => {
   try {
     const { documentId } = req.params;
-    const filePath = `uploads/${documentId}.pdf`;
+    
+    // Try to find the file with either .pdf or .txt extension
+    const fs = await import('fs/promises');
+    let filePath: string | null = null;
+    
+    const pdfPath = `uploads/${documentId}.pdf`;
+    const txtPath = `uploads/${documentId}.txt`;
+    
+    try {
+      await fs.access(pdfPath);
+      filePath = pdfPath;
+    } catch {
+      try {
+        await fs.access(txtPath);
+        filePath = txtPath;
+      } catch {
+        // Try to find any file starting with documentId
+        const files = await fs.readdir('uploads/');
+        const matchingFile = files.find(f => f.startsWith(documentId));
+        if (matchingFile) {
+          filePath = `uploads/${matchingFile}`;
+        }
+      }
+    }
+    
+    if (!filePath) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
 
-    // Extract and parse
-    const { text } = await extractTextFromPDF(filePath);
+    // Extract text - handle both PDF and TXT
+    let text: string;
+    if (filePath.endsWith('.txt')) {
+      text = await fs.readFile(filePath, 'utf-8');
+    } else {
+      const result = await extractTextFromPDF(filePath);
+      text = result.text;
+    }
+    
     const parsed = await parseCBADocument(text, documentId);
 
     res.json({
@@ -140,7 +174,34 @@ router.post('/import', async (req, res) => {
 router.post('/process/:documentId', async (req, res) => {
   try {
     const { documentId } = req.params;
-    const filePath = `uploads/${documentId}.pdf`;
+    
+    // Try to find the file with either .pdf or .txt extension
+    const fs = await import('fs/promises');
+    let filePath: string | null = null;
+    
+    const pdfPath = `uploads/${documentId}.pdf`;
+    const txtPath = `uploads/${documentId}.txt`;
+    
+    try {
+      await fs.access(pdfPath);
+      filePath = pdfPath;
+    } catch {
+      try {
+        await fs.access(txtPath);
+        filePath = txtPath;
+      } catch {
+        // Try to find any file starting with documentId
+        const files = await fs.readdir('uploads/');
+        const matchingFile = files.find(f => f.startsWith(documentId));
+        if (matchingFile) {
+          filePath = `uploads/${matchingFile}`;
+        }
+      }
+    }
+    
+    if (!filePath) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
 
     const parsed = await processDocument(filePath, documentId);
 

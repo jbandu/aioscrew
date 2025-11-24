@@ -1,4 +1,4 @@
-import { Home, Calendar, Users, DollarSign, BarChart3, FileText, Settings } from 'lucide-react';
+import { Home, Calendar, Users, DollarSign, BarChart3, FileText, Settings, Upload, MessageSquare } from 'lucide-react';
 import { UserRole } from '../types';
 
 interface SidebarProps {
@@ -47,6 +47,8 @@ const sidebarMenus: Record<UserRole, Array<{ icon: any; label: string; view: str
     { icon: Home, label: 'Compliance Dashboard', view: 'dashboard' },
     { icon: FileText, label: 'Violations', view: 'violations' },
     { icon: Users, label: 'Grievances', view: 'grievances' },
+    { icon: Upload, label: 'CBA Upload', view: 'cba-upload' },
+    { icon: MessageSquare, label: 'CBA Chat', view: 'cba-chat' },
     { icon: BarChart3, label: 'Reports', view: 'reports' },
     { icon: Settings, label: 'Settings', view: 'settings' }
   ],

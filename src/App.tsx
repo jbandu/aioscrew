@@ -63,7 +63,7 @@ function App() {
       title: 'Operations Management'
     },
     'union': {
-      component: <UnionView />,
+      component: <UnionView activeView={activeView} />,
       title: 'Union Compliance Center'
     },
     'executive': {
