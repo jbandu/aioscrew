@@ -83,7 +83,7 @@ export default function CBADocumentUpload() {
       if (data.success) {
         setSections(data.sections);
         // Select all sections by default
-        const allRefs = new Set(data.sections.map((s: ContractSection) => s.reference));
+        const allRefs = new Set<string>(data.sections.map((s: ContractSection) => s.reference));
         setSelectedSections(allRefs);
         setSuccess(`Parsed ${data.sections.length} sections from document`);
       } else {

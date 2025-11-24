@@ -85,7 +85,7 @@ const TimelineStepItem = ({ step, isLast }: { step: TimelineStep; isLast: boolea
           {/* Sub-steps (hierarchical agents) */}
           {step.subSteps && step.subSteps.length > 0 && (step.status === 'running' || step.status === 'completed') && (
             <div className="mt-3 ml-4 pl-4 border-l-2 border-indigo-200 space-y-3">
-              {step.subSteps.map((subStep, index) => (
+              {step.subSteps.map((subStep) => (
                 <div key={subStep.id} className="flex items-start space-x-3">
                   <div className="flex-shrink-0">
                     {subStep.status === 'completed' ? (

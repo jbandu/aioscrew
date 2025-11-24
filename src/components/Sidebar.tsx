@@ -49,6 +49,13 @@ const sidebarMenus: Record<UserRole, Array<{ icon: any; label: string; view: str
     { icon: Users, label: 'Grievances', view: 'grievances' },
     { icon: BarChart3, label: 'Reports', view: 'reports' },
     { icon: Settings, label: 'Settings', view: 'settings' }
+  ],
+  'executive': [
+    { icon: Home, label: 'Executive Dashboard', view: 'dashboard' },
+    { icon: BarChart3, label: 'Analytics', view: 'analytics' },
+    { icon: DollarSign, label: 'Financial Overview', view: 'financial' },
+    { icon: Users, label: 'Strategic Planning', view: 'strategic' },
+    { icon: Settings, label: 'Settings', view: 'settings' }
   ]
 };
 

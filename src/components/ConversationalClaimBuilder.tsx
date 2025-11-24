@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MessageCircle, Send, CheckCircle, AlertCircle, Loader, Sparkles } from 'lucide-react';
+import { Send, Loader, Sparkles } from 'lucide-react';
 import type { CrewMember, Trip } from '../types';
 
 interface ConversationalClaimBuilderProps {
@@ -193,9 +193,10 @@ What claim would you like to submit?`,
     const days = extractNumber(text, 'days');
     const amount = extractNumber(text, 'amount');
 
+    const resolvedTripId = tripId ?? extractedData.tripId;
     const data: ExtractedClaimData = {
-      claimType,
-      tripId: tripId || extractedData.tripId,
+      claimType: claimType ?? undefined,
+      tripId: resolvedTripId === null ? undefined : resolvedTripId,
       hours: hours || extractedData.hours,
       days: days || extractedData.days,
       amount: amount || extractedData.amount,
@@ -219,7 +220,7 @@ What claim would you like to submit?`,
       data.complete = missing.length === 0;
 
       // Calculate amount if possible
-      if (!data.amount && config.baseAmount) {
+      if (!data.amount && 'baseAmount' in config && config.baseAmount) {
         if (claimType === 'per_diem' && data.days) {
           // Try to get trip to determine domestic/international
           const trip = userTrips.find(t => t.id === data.tripId);
@@ -355,10 +356,8 @@ What claim would you like to submit?`,
     // If claim is complete, show the create button after a delay
     if (analyzedData.complete) {
       setTimeout(() => {
-        const trip = analyzedData.tripId ? userTrips.find(t => t.id === analyzedData.tripId) : null;
-        const config = analyzedData.claimType ?
+        const claimConfig = analyzedData.claimType ?
           CLAIM_TYPE_CONFIGS[analyzedData.claimType as keyof typeof CLAIM_TYPE_CONFIGS] : null;
-
         onClaimDataReady({
           type: analyzedData.claimType,
           tripId: analyzedData.tripId || '',
@@ -366,7 +365,7 @@ What claim would you like to submit?`,
           hours: analyzedData.hours?.toString() || '',
           numberOfDays: analyzedData.days?.toString() || '',
           description: analyzedData.description || '',
-          claimTypeLabel: config?.label || 'Other'
+          claimTypeLabel: claimConfig?.label || 'Other'
         });
       }, 1000);
     }

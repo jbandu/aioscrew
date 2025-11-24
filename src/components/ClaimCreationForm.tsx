@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
-  X, DollarSign, Calendar, Clock, Plane, MapPin, AlertCircle,
-  CheckCircle, Info, FileText, Globe, Utensils, Moon, Briefcase,
+  X, Calendar, Clock, Plane, MapPin, AlertCircle,
+  CheckCircle, Info, FileText, Globe, Utensils, Moon,
   TrendingUp, Award, Users
 } from 'lucide-react';
 import type { CrewMember, Trip, Claim } from '../types';
@@ -243,8 +243,7 @@ export default function ClaimCreationForm({ currentUser, userTrips, onClose, onS
         status: 'pending',
         ai_validated: false,
         ai_explanation: '',
-        contract_reference: selectedClaimType?.contractRef || 'CBA Section 15',
-        notes: formData.description
+        contract_reference: selectedClaimType?.contractRef || 'CBA Section 15'
       };
 
       await onSubmit(claim);

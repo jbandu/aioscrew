@@ -76,7 +76,7 @@ export default function HierarchicalAgentView({ isExpanded, parentStatus }: Hier
 
       {showDetails && (
         <div className="space-y-2">
-          {subAgents.map((agent, index) => (
+          {subAgents.map((agent) => (
             <div
               key={agent.id}
               className={`relative flex items-center space-x-3 p-3 rounded-lg border ${statusColors[agent.status]} transition-all duration-300`}

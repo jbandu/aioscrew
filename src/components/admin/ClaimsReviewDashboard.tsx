@@ -3,10 +3,9 @@
  * Shows real-time agent activity, metrics, and claims table
  */
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   FileText, 
-  TrendingUp, 
   Users, 
   Clock, 
   CheckCircle, 
@@ -32,7 +31,7 @@ interface ClaimsReviewDashboardProps {
   onViewClaim?: (claimId: string) => void;
 }
 
-export default function ClaimsReviewDashboard({ onViewClaim }: ClaimsReviewDashboardProps) {
+export default function ClaimsReviewDashboard({}: ClaimsReviewDashboardProps) {
   const { activities, isConnected } = useAdminAgentActivity();
   const [metrics, setMetrics] = useState<ClaimsMetrics | null>(null);
   const [claims, setClaims] = useState<ClaimSummary[]>([]);
@@ -213,7 +212,7 @@ export default function ClaimsReviewDashboard({ onViewClaim }: ClaimsReviewDashb
     );
   };
 
-  const getActivityIcon = (activity: string, status: string) => {
+  const getActivityIcon = (_activity: string, status: string) => {
     if (status === 'processing') return <Loader className="animate-spin text-blue-600" size={16} />;
     if (status === 'success') return <CheckCircle className="text-green-600" size={16} />;
     if (status === 'error') return <XCircle className="text-red-600" size={16} />;

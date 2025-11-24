@@ -3,7 +3,7 @@
  * Allows asking questions from both Claims Administrator and Union Representative perspectives
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Send, ThumbsUp, ThumbsDown, AlertTriangle, FileText, Building, Users } from 'lucide-react';
 
 type Perspective = 'admin' | 'union';
@@ -39,8 +39,6 @@ export default function CBAChat() {
   const [perspective, setPerspective] = useState<Perspective>('admin');
   const [loading, setLoading] = useState(false);
   const [showBothPerspectives, setShowBothPerspectives] = useState(false);
-  const [adminResponse, setAdminResponse] = useState<ChatResponse | null>(null);
-  const [unionResponse, setUnionResponse] = useState<ChatResponse | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -77,9 +75,6 @@ export default function CBAChat() {
         const data = await response.json();
 
         if (data.success) {
-          setAdminResponse(data.admin);
-          setUnionResponse(data.union);
-
           // Add both responses as messages
           const adminMessage: Message = {
             id: `${Date.now()}-admin`,
@@ -160,10 +155,6 @@ export default function CBAChat() {
       console.error('Error validating response:', error);
       alert('Error recording validation');
     }
-  };
-
-  const getPerspectiveColor = (persp: Perspective) => {
-    return persp === 'admin' ? 'blue' : 'green';
   };
 
   const getPerspectiveIcon = (persp: Perspective) => {
