@@ -98,12 +98,31 @@ io.on('connection', (socket) => {
 // Serve static frontend files from /public directory
 // In production (Docker), files are at /app/public
 // In development, they might be at ../dist or ../public
-let publicPath: string;
-if (process.env.NODE_ENV === 'production') {
-  // Production: use absolute path /app/public (as set up in Dockerfile)
-  publicPath = '/app/public';
+const isProduction = process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT === 'production';
+
+let publicPath: string = '/app/public'; // Default fallback
+
+if (isProduction) {
+  // Production: try multiple possible locations based on Dockerfile structure
+  // Dockerfile copies frontend dist to /app/public
+  const possiblePaths = [
+    '/app/public',           // Standard Dockerfile location
+    '/app/dist',             // Alternative location
+    path.join(__dirname, '..', 'public'), // Relative fallback
+    path.join(__dirname, '..', 'dist'),   // Relative fallback
+  ];
+  
+  // Find the first path that exists and contains index.html
+  for (const testPath of possiblePaths) {
+    const indexPath = path.join(testPath, 'index.html');
+    if (fs.existsSync(indexPath)) {
+      publicPath = testPath;
+      break;
+    }
+  }
 } else {
   // Development: try multiple possible locations
+  // __dirname is backend/dist, so go up to root, then into dist
   publicPath = path.join(__dirname, '..', 'dist');
   // Fallback to public if dist doesn't exist
   if (!fs.existsSync(publicPath)) {
@@ -112,6 +131,22 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 console.log(`📁 Serving static files from: ${publicPath}`);
+console.log(`📁 __dirname: ${__dirname}`);
+console.log(`📁 NODE_ENV: ${process.env.NODE_ENV || 'not set'}`);
+console.log(`📁 RAILWAY_ENVIRONMENT: ${process.env.RAILWAY_ENVIRONMENT || 'not set'}`);
+
+// Verify index.html exists
+const indexPath = path.join(publicPath, 'index.html');
+if (!fs.existsSync(indexPath)) {
+  console.error(`⚠️  WARNING: index.html not found at ${indexPath}`);
+  console.error(`   Attempting to list directory contents of ${publicPath}:`);
+  try {
+    const files = fs.readdirSync(publicPath);
+    console.error(`   Found files: ${files.join(', ')}`);
+  } catch (err) {
+    console.error(`   Could not read directory: ${err}`);
+  }
+}
 app.use(express.static(publicPath));
 
 // Catch-all route to serve index.html for client-side routing (SPA support)
