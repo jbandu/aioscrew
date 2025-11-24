@@ -1,10 +1,10 @@
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
+import { Calendar as CalendarIcon } from 'lucide-react';
 
 interface CalendarViewProps {
   onTripClick: (trip: any) => void;
 }
 
-export default function CalendarView({ onTripClick }: CalendarViewProps) {
+export default function CalendarView({ onTripClick: _onTripClick }: CalendarViewProps) {
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">

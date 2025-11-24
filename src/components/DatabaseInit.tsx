@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Database, CheckCircle, AlertCircle, Loader } from 'lucide-react';
+import { CheckCircle, AlertCircle, Loader } from 'lucide-react';
 import { initializeDatabase, seedDatabase } from '../lib/db';
 
 interface DatabaseInitProps {

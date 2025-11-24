@@ -470,6 +470,7 @@ export default function DataGenerationCard() {
   const handleCleanup = async () => {
     setIsCleaning(true);
     setCleanupStatus(null);
+    const { dataGenerationService } = await import('../services/dataGenerationService');
     const result = await dataGenerationService.cleanupTestData(true);
     setIsCleaning(false);
 
@@ -1051,7 +1052,7 @@ export default function DataGenerationCard() {
                       </div>
                       {(aiPlan.riskAlerts?.length || aiMeta.warning) && (
                         <div className="space-y-2">
-                          {aiPlan.riskAlerts?.length > 0 && (
+                          {aiPlan.riskAlerts && aiPlan.riskAlerts.length > 0 && (
                             <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-900">
                               <span className="font-semibold">Risk Alerts:</span>{' '}
                               {aiPlan.riskAlerts.join(' • ')}

@@ -19,12 +19,6 @@ const AgentStep = ({ name, icon, status, duration, description, showSubAgents }:
     error: 'bg-red-50 text-red-600 border-red-500'
   };
 
-  const iconMap: Record<string, string> = {
-    '🔍': 'Flight Time',
-    '💰': 'Premium Pay',
-    '🛡️': 'Compliance',
-    '⚖️': 'Final Decision'
-  };
 
   return (
     <div>
