@@ -4,7 +4,7 @@
  */
 
 import { neon } from '@neondatabase/serverless';
-import type { CrewMember, Trip } from '../../src/types';
+import type { CrewMember, Trip } from '../types';
 
 const sql = neon(process.env.DATABASE_URL!);
 
