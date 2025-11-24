@@ -668,8 +668,8 @@ router.post('/excess-payments/scan', async (req: Request, res: Response) => {
 
       const result = await runExcessPaymentDetector({
         claim,
-        trip,
-        crew,
+        trip: trip ?? undefined,
+        crew: crew ?? undefined,
         historicalData: historical
       });
 
@@ -742,8 +742,8 @@ router.post('/excess-payments/scan', async (req: Request, res: Response) => {
 
         const result = await runExcessPaymentDetector({
           claim,
-          trip,
-          crew,
+          trip: trip ?? undefined,
+          crew: crew ?? undefined,
           historicalData: historical
         });
 
