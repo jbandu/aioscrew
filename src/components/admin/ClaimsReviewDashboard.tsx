@@ -38,6 +38,8 @@ export default function ClaimsReviewDashboard({ onViewClaim }: ClaimsReviewDashb
   const [claims, setClaims] = useState<ClaimSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedClaim, setSelectedClaim] = useState<ClaimDetails | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingClaimId, setProcessingClaimId] = useState<string | null>(null);
   const [filters, setFilters] = useState({
     status: '',
     priority: '',
@@ -93,6 +95,70 @@ export default function ClaimsReviewDashboard({ onViewClaim }: ClaimsReviewDashb
       setSelectedClaim(details);
     } catch (error) {
       console.error('Error loading claim details:', error);
+    }
+  };
+
+  // Process a single claim with AI agents
+  const processClaimWithAgents = async (claimId: string) => {
+    try {
+      setProcessingClaimId(claimId);
+      console.log(`🤖 Processing claim ${claimId} with AI agents...`);
+
+      const response = await fetch('/api/agents/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ claimId })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to process claim: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      console.log(`✅ Claim ${claimId} processed:`, result.overallStatus);
+
+      // Reload data to show updated claim
+      await loadData();
+    } catch (error) {
+      console.error('Error processing claim:', error);
+      alert(`Failed to process claim: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setProcessingClaimId(null);
+    }
+  };
+
+  // Process all pending claims with AI agents
+  const processAllPendingClaims = async () => {
+    const pendingClaims = claims.filter(c =>
+      c.status === 'pending' || c.status === 'needs-review' || c.status === 'manual_review'
+    );
+
+    if (pendingClaims.length === 0) {
+      alert('No pending claims to process');
+      return;
+    }
+
+    if (!confirm(`Process ${pendingClaims.length} pending claims with AI agents?`)) {
+      return;
+    }
+
+    try {
+      setIsProcessing(true);
+      console.log(`🤖 Processing ${pendingClaims.length} pending claims...`);
+
+      for (const claim of pendingClaims) {
+        await processClaimWithAgents(claim.claim_id);
+        // Small delay to avoid overwhelming the backend
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+
+      console.log('✅ All claims processed');
+      alert('All pending claims have been processed!');
+    } catch (error) {
+      console.error('Error processing claims:', error);
+      alert('Error processing some claims. Check console for details.');
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -294,6 +360,15 @@ export default function ClaimsReviewDashboard({ onViewClaim }: ClaimsReviewDashb
             <RefreshCw size={16} />
             <span>Refresh</span>
           </button>
+
+          <button
+            onClick={processAllPendingClaims}
+            disabled={isProcessing || claims.filter(c => c.status === 'pending' || c.status === 'needs-review' || c.status === 'manual_review').length === 0}
+            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center space-x-2"
+          >
+            <Brain size={16} className={isProcessing ? 'animate-pulse' : ''} />
+            <span>{isProcessing ? 'Processing...' : 'Process All with AI'}</span>
+          </button>
         </div>
       </div>
 
@@ -367,6 +442,14 @@ export default function ClaimsReviewDashboard({ onViewClaim }: ClaimsReviewDashb
                         </button>
                         {claim.status === 'pending' || claim.status === 'manual_review' || claim.status === 'needs-review' ? (
                           <>
+                            <button
+                              onClick={() => processClaimWithAgents(claim.claim_id)}
+                              disabled={processingClaimId === claim.claim_id}
+                              className="px-3 py-1 bg-purple-100 text-purple-700 rounded hover:bg-purple-200 disabled:bg-gray-200 disabled:text-gray-500 flex items-center space-x-1"
+                            >
+                              <Brain size={14} className={processingClaimId === claim.claim_id ? 'animate-pulse' : ''} />
+                              <span>{processingClaimId === claim.claim_id ? 'Processing...' : 'AI Process'}</span>
+                            </button>
                             <button
                               onClick={() => handleApprove(claim.claim_id)}
                               className="px-3 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 flex items-center space-x-1"
