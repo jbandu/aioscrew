@@ -15,6 +15,10 @@ jobs:
       matrix:
         node-version: [20.x]
 
+    env:
+      API_BASE_URL: https://aioscrew-backend-production.up.railway.app
+      VITE_API_URL: https://aioscrew-backend-production.up.railway.app
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -28,34 +32,16 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
-      - name: Install backend dependencies
-        run: cd backend && npm ci
-
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
-      - name: Create backend .env file
-        run: |
-          cd backend
-          cat > .env << EOF
-          ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
-          OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
-          DATABASE_URL=${{ secrets.DATABASE_URL }}
-          PORT=3001
-          NODE_ENV=test
-          FRONTEND_URL=http://localhost:5173
-          EOF
-
       - name: Type check
-        run: |
-          npm run typecheck
-          cd backend && npx tsc --noEmit
+        run: npm run typecheck
 
       - name: Run E2E tests
         run: npm test
         env:
           BASE_URL: http://localhost:5173
-          API_BASE_URL: http://localhost:3001
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
@@ -77,6 +63,9 @@ jobs:
     timeout-minutes: 30
     runs-on: ubuntu-latest
 
+    env:
+      API_BASE_URL: https://aioscrew-backend-production.up.railway.app
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -88,29 +77,13 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: |
-          npm ci
-          cd backend && npm ci
+        run: npm ci
 
       - name: Install Playwright
         run: npx playwright install --with-deps chromium
 
-      - name: Create backend .env file
-        run: |
-          cd backend
-          cat > .env << EOF
-          ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
-          OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
-          DATABASE_URL=${{ secrets.DATABASE_URL }}
-          PORT=3001
-          NODE_ENV=test
-          FRONTEND_URL=http://localhost:5173
-          EOF
-
       - name: Run API tests only
         run: npm run test:api
-        env:
-          API_BASE_URL: http://localhost:3001
 
       - name: Upload API test results
         uses: actions/upload-artifact@v4
