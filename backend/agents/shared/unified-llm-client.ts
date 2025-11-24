@@ -175,7 +175,11 @@ export async function callUnifiedLLM(options: UnifiedLLMOptions): Promise<Unifie
         };
       }
 
-      // TODO: Add OpenAI, Google, xAI providers here
+      // Skip unimplemented providers
+      if (['openai', 'google', 'xai'].includes(config.provider)) {
+        console.log(`⚠️  Skipping ${config.provider}/${config.model}: Provider not yet implemented`);
+        continue;
+      }
 
       // Native rules engine
       if (config.provider === 'native') {
@@ -184,6 +188,10 @@ export async function callUnifiedLLM(options: UnifiedLLMOptions): Promise<Unifie
         continue;
       }
 
+      // If we reach here, provider is not recognized
+      console.warn(`⚠️  Unknown provider: ${config.provider}/${config.model}, skipping...`);
+      continue;
+
     } catch (error) {
       console.error(`❌ Error with ${config.provider}/${config.model}:`, error);
       // Continue to next provider
@@ -191,7 +199,9 @@ export async function callUnifiedLLM(options: UnifiedLLMOptions): Promise<Unifie
     }
   }
 
-  throw new Error(`All LLM providers failed for agent type: ${agentType}`);
+  // Build list of attempted providers for better error message
+  const attemptedProviders = configs.map(c => `${c.provider}/${c.model}`).join(', ');
+  throw new Error(`All LLM providers failed for agent type: ${agentType}. Attempted: ${attemptedProviders}`);
 }
 
 /**

@@ -30,11 +30,11 @@ export const AGENT_LLM_MAPPING: Record<string, LLMProviderConfig[]> = {
       priority: 0
     },
     {
-      provider: 'openai',
-      model: 'gpt-4o-mini',
-      reasoning: 'Structured calculations, fast inference, cost-effective for simple arithmetic logic',
-      cost: '$0.15 per 1M tokens (input), $0.60 per 1M tokens (output)',
-      avgLatency: '2-3 seconds',
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-5-20250929',
+      reasoning: 'Structured calculations, fast inference, cost-effective for flight time validation',
+      cost: '$3 per 1M tokens (input), $15 per 1M tokens (output)',
+      avgLatency: '3-5 seconds',
       priority: 1
     }
   ],
