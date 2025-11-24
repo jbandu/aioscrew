@@ -150,29 +150,47 @@ export async function callUnifiedLLM(options: UnifiedLLMOptions): Promise<Unifie
       // Try Anthropic/Claude
       if (config.provider === 'anthropic') {
         if (!config.apiKey) {
-          console.log(`⚠️  Skipping ${config.provider}: API key not configured`);
+          console.log(`⚠️  Skipping ${config.provider}/${config.model}: API key not configured`);
+          console.log(`   💡 TIP: Set ANTHROPIC_API_KEY environment variable to use Claude`);
           continue;
         }
 
         logCostWarning(config, estimatedInputTokens);
         console.log(`☁️  Using cloud provider: ${config.provider}/${config.model}`);
 
-        const response = await callClaude({
-          systemPrompt,
-          userPrompt,
-          temperature,
-          maxTokens,
-          model: config.model
-        });
+        try {
+          const response = await callClaude({
+            systemPrompt,
+            userPrompt,
+            temperature,
+            maxTokens,
+            model: config.model
+          });
 
-        const cost = estimateCost(config, response.usage.inputTokens, response.usage.outputTokens);
+          const cost = estimateCost(config, response.usage.inputTokens, response.usage.outputTokens);
 
-        return {
-          ...response,
-          provider: 'anthropic',
-          model: config.model,
-          estimatedCost: cost
-        };
+          return {
+            ...response,
+            provider: 'anthropic',
+            model: config.model,
+            estimatedCost: cost
+          };
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          console.error(`❌ Claude API call failed: ${errorMessage}`);
+          
+          // Check for common error types
+          if (errorMessage.includes('401') || errorMessage.includes('authentication')) {
+            console.error(`   🔑 Authentication failed - check ANTHROPIC_API_KEY is valid`);
+          } else if (errorMessage.includes('429') || errorMessage.includes('rate limit')) {
+            console.error(`   ⏱️  Rate limit exceeded - wait before retrying`);
+          } else if (errorMessage.includes('insufficient') || errorMessage.includes('credit')) {
+            console.error(`   💳 Insufficient API credits - check your Anthropic account balance`);
+          }
+          
+          // Continue to next provider
+          continue;
+        }
       }
 
       // Skip unimplemented providers
@@ -201,7 +219,28 @@ export async function callUnifiedLLM(options: UnifiedLLMOptions): Promise<Unifie
 
   // Build list of attempted providers for better error message
   const attemptedProviders = configs.map(c => `${c.provider}/${c.model}`).join(', ');
-  throw new Error(`All LLM providers failed for agent type: ${agentType}. Attempted: ${attemptedProviders}`);
+  const availableProviders = configs.filter(c => {
+    if (c.provider === 'ollama') return false; // Already tried
+    if (c.provider === 'anthropic' && !c.apiKey) return false; // Missing API key
+    return true;
+  });
+
+  let errorMessage = `All LLM providers failed for agent type: ${agentType}\n`;
+  errorMessage += `Attempted: ${attemptedProviders}\n\n`;
+  
+  if (availableProviders.length === 0) {
+    errorMessage += `💡 SETUP REQUIRED:\n`;
+    errorMessage += `   1. Install Ollama: https://ollama.ai (FREE local option)\n`;
+    errorMessage += `   2. OR set ANTHROPIC_API_KEY environment variable\n`;
+    errorMessage += `   3. OR configure other LLM providers (OpenAI, Google, etc.)\n`;
+  } else {
+    errorMessage += `⚠️  All configured providers failed. Check:\n`;
+    errorMessage += `   - API keys are valid and have credits\n`;
+    errorMessage += `   - Network connectivity\n`;
+    errorMessage += `   - Provider service status\n`;
+  }
+  
+  throw new Error(errorMessage);
 }
 
 /**
