@@ -69,18 +69,11 @@ export default defineConfig({
   ],
 
   // Run local dev server before starting tests
+  // Note: Backend is deployed on Railway, so we only start the frontend locally
   webServer: [
     {
       command: 'npm run dev',
       url: 'http://localhost:5173',
-      reuseExistingServer: !process.env.CI,
-      timeout: 120 * 1000,
-      stdout: 'ignore',
-      stderr: 'pipe',
-    },
-    {
-      command: 'cd backend && npm run dev',
-      url: 'http://localhost:3001/health',
       reuseExistingServer: !process.env.CI,
       timeout: 120 * 1000,
       stdout: 'ignore',
