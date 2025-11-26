@@ -13,7 +13,8 @@ import {
   updateClaimWithValidation
 } from '../../services/database-service.js';
 import type { AgentInput } from '../../agents/shared/types.js';
-import { runTestDataGenerator } from '../../agents/core/test-data-generator.js';
+import { runTestDataGenerator, normalizeConfig, calculateStats } from '../../agents/core/test-data-generator.js';
+import type { TestDataConfig } from '../../agents/core/test-data-generator.js';
 
 const router = Router();
 const sql = process.env.DATABASE_URL ? neon(process.env.DATABASE_URL) : null;
@@ -191,6 +192,78 @@ router.get('/health', (req: Request, res: Response) => {
       'compliance-validator'
     ]
   });
+});
+
+/**
+ * POST /api/agents/test-data/preview
+ * Returns formatted input preview before LLM call.
+ */
+router.post('/test-data/preview', async (req: Request, res: Response) => {
+  try {
+    const { config, scenarioId } = req.body || {};
+
+    if (!config || typeof config !== 'object') {
+      return res.status(400).json({
+        error: 'Missing config in request body'
+      });
+    }
+
+    const normalizedConfig = normalizeConfig(config);
+    const stats = calculateStats(normalizedConfig);
+    
+    const endDate = new Date(normalizedConfig.startDate);
+    endDate.setFullYear(endDate.getFullYear() + normalizedConfig.yearsOfHistory);
+    
+    const preview = {
+      scenario: {
+        id: scenarioId || null,
+        name: scenarioId || 'Custom Configuration'
+      },
+      crew: {
+        total: normalizedConfig.totalCrewMembers,
+        distribution: {
+          captains: normalizedConfig.captains,
+          firstOfficers: normalizedConfig.firstOfficers,
+          seniorFA: normalizedConfig.seniorFA,
+          juniorFA: normalizedConfig.juniorFA
+        }
+      },
+      timeRange: {
+        years: normalizedConfig.yearsOfHistory,
+        startDate: normalizedConfig.startDate,
+        endDate: endDate.toISOString().split('T')[0]
+      },
+      operations: {
+        averageTripsPerMonth: normalizedConfig.averageTripsPerMonth,
+        internationalRatio: normalizedConfig.internationalRatio,
+        bases: normalizedConfig.bases,
+        routes: normalizedConfig.routes,
+        aircraftTypes: normalizedConfig.aircraftTypes
+      },
+      claims: {
+        frequency: normalizedConfig.claimFrequency,
+        distribution: normalizedConfig.claimTypes
+      },
+      operationalPatterns: {
+        violationRate: normalizedConfig.violationRate,
+        disruptionRate: normalizedConfig.disruptionRate
+      },
+      realism: {
+        useRealisticDistributions: normalizedConfig.useRealisticDistributions,
+        useSeasonalPatterns: normalizedConfig.useSeasonalPatterns,
+        generateEdgeCases: normalizedConfig.generateEdgeCases
+      },
+      projectedStats: stats
+    };
+
+    res.json(preview);
+  } catch (error) {
+    console.error('❌ Test data preview error:', error);
+    res.status(500).json({
+      error: 'Failed to generate input preview',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
 });
 
 /**
