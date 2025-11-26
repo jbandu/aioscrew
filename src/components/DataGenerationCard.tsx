@@ -349,6 +349,8 @@ export default function DataGenerationCard() {
   const [inputPreview, setInputPreview] = useState<InputPreview | null>(null);
   const [showInputPreview, setShowInputPreview] = useState(false);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+  const [showSubmissionDetails, setShowSubmissionDetails] = useState(false);
+  const [llmPromptPreview, setLlmPromptPreview] = useState<{ systemPrompt: string; userPrompt: string } | null>(null);
 
   const handleScenarioSelect = (scenario: ScenarioPreset) => {
     setSelectedScenario(scenario.id);
@@ -376,6 +378,102 @@ export default function DataGenerationCard() {
   const selectedLLM = LLM_OPTIONS.find((option) => option.id === selectedLLMId) || LLM_OPTIONS[0];
   const isMassiveRun = stats.dataPoints >= MASSIVE_DATA_THRESHOLD;
   const requiresPaidConfirmation = selectedLLM.tier === 'paid' && isMassiveRun;
+
+  // Estimate token count and cost
+  const estimateTokens = (text: string): number => {
+    // Rough estimate: ~4 characters per token
+    return Math.ceil(text.length / 4);
+  };
+
+  const estimateLLMCost = (inputTokens: number, outputTokens: number): string => {
+    if (selectedLLM.tier === 'free') {
+      return '$0.00 (free)';
+    }
+
+    // Parse cost from LLM option description
+    const costMatch = selectedLLM.cost.match(/\$(\d+(?:\.\d+)?)[^,]+\$(\d+(?:\.\d+)?)/);
+    if (!costMatch) {
+      return 'Cost unknown';
+    }
+
+    const inputCostPerM = parseFloat(costMatch[1]);
+    const outputCostPerM = parseFloat(costMatch[2]);
+
+    const inputCost = (inputTokens / 1_000_000) * inputCostPerM;
+    const outputCost = (outputTokens / 1_000_000) * outputCostPerM;
+    const totalCost = inputCost + outputCost;
+
+    return `~$${totalCost.toFixed(4)}`;
+  };
+
+  const estimateDataSize = (): string => {
+    // Rough estimate: each record is ~500 bytes on average
+    const estimatedBytes = stats.dataPoints * 500;
+    if (estimatedBytes < 1024) {
+      return `${estimatedBytes} bytes`;
+    } else if (estimatedBytes < 1024 * 1024) {
+      return `${(estimatedBytes / 1024).toFixed(2)} KB`;
+    } else if (estimatedBytes < 1024 * 1024 * 1024) {
+      return `${(estimatedBytes / (1024 * 1024)).toFixed(2)} MB`;
+    } else {
+      return `${(estimatedBytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+    }
+  };
+
+  const buildLLMPromptPreview = () => {
+    const claimBreakdown = Object.entries(config.claimTypes)
+      .map(([key, value]) => `- ${key}: ${value}%`)
+      .join('\n');
+
+    const systemPrompt = `You are a Copa Airlines data generation engineer.
+Design synthetic data blueprints for crew members, trips, and claims.
+Focus on realistic airline operations, ensuring every recommendation can be executed by engineers.
+
+Respond with JSON using this schema:
+{
+  "summary": "high-level description",
+  "recommendedSteps": ["step 1", "step 2"],
+  "qaChecklist": ["validation 1", "validation 2"],
+  "datasetSamples": {
+    "crewMembers": [
+      {"name": "...", "role": "...", "base": "...", "seniority": "...", "focus": "..."}
+    ],
+    "trips": [
+      {"route": "...", "flightNumber": "...", "seasonality": "...", "notes": "..."}
+    ],
+    "claims": [
+      {"claimType": "...", "pattern": "...", "amountHint": "...", "contractReference": "..."}
+    ]
+  },
+  "riskAlerts": ["optional risk callouts"]
+}
+
+Keep responses concise, actionable, and grounded in the provided configuration.`;
+
+    const userPrompt = `Generate Copa Airlines synthetic dataset guidance.
+Scenario: ${selectedScenario || 'custom'}
+Crew: ${config.totalCrewMembers} (${config.captains}% captains, ${config.firstOfficers}% FOs, ${config.seniorFA}% senior FA, ${config.juniorFA}% junior FA)
+Time span: ${config.yearsOfHistory} years starting ${config.startDate}
+Trips/month per crew: ${config.averageTripsPerMonth}
+International mix: ${(config.internationalRatio * 100).toFixed(0)}%
+Edge cases: ${config.generateEdgeCases ? 'Include' : 'Exclude'}
+Seasonality enabled: ${config.useSeasonalPatterns ? 'yes' : 'no'}
+Realistic distributions: ${config.useRealisticDistributions ? 'yes' : 'no'}
+
+Projected volume:
+- Crew members: ${stats.crewMembers.toLocaleString()}
+- Trips: ${stats.trips.toLocaleString()}
+- Claims: ${stats.claims.toLocaleString()}
+- Violations per 1k trips: ${config.violationRate}
+- Disruptions per 1k trips: ${config.disruptionRate}
+
+Claim type distribution:
+${claimBreakdown}
+
+Include concrete SQL-ready guidance, QA checks, and a few sample rows for each entity.`;
+
+    return { systemPrompt, userPrompt };
+  };
 
   useEffect(() => {
     if (!requiresPaidConfirmation) {
@@ -479,6 +577,8 @@ export default function DataGenerationCard() {
       });
     } finally {
       setIsGenerating(false);
+      setShowSubmissionDetails(false);
+      setShowInputPreview(false);
     }
   };
 
@@ -880,7 +980,10 @@ export default function DataGenerationCard() {
                 </div>
               </div>
               <button
-                onClick={() => setShowInputPreview(false)}
+                onClick={() => {
+                  setShowInputPreview(false);
+                  setShowSubmissionDetails(false);
+                }}
                 className="p-2 hover:bg-white rounded-lg transition-colors"
               >
                 <X className="w-5 h-5 text-gray-500" />
@@ -1106,49 +1209,195 @@ export default function DataGenerationCard() {
                 </div>
               </div>
             </div>
+
+            {/* Submission Details Section */}
+            {showSubmissionDetails && llmPromptPreview && (
+              <div className="mt-6 p-6 bg-white rounded-xl border-2 border-purple-200 shadow-lg">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-purple-100 rounded-lg">
+                    <Brain className="w-6 h-6 text-purple-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900">LLM Submission Details</h3>
+                    <p className="text-sm text-gray-600">Review what will be sent to the LLM and estimated costs</p>
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6 mb-6">
+                  {/* Records & Size Summary */}
+                  <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-lg p-4 border border-indigo-200">
+                    <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                      <Database className="w-5 h-5 text-indigo-600" />
+                      Data Summary
+                    </h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Total Records:</span>
+                        <span className="font-bold text-indigo-700">{stats.dataPoints.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Crew Members:</span>
+                        <span className="font-semibold">{stats.crewMembers.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Trips:</span>
+                        <span className="font-semibold">{stats.trips.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Claims:</span>
+                        <span className="font-semibold">{stats.claims.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Violations:</span>
+                        <span className="font-semibold">{stats.violations.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Disruptions:</span>
+                        <span className="font-semibold">{stats.disruptions.toLocaleString()}</span>
+                      </div>
+                      <div className="pt-2 border-t border-indigo-200">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 font-medium">Estimated Data Size:</span>
+                          <span className="font-bold text-indigo-700">{estimateDataSize()}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Cost Estimate */}
+                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-4 border border-green-200">
+                    <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                      <DollarSign className="w-5 h-5 text-green-600" />
+                      Cost Estimate
+                    </h4>
+                    <div className="space-y-3">
+                      <div>
+                        <div className="text-xs text-gray-500 mb-1">Selected LLM:</div>
+                        <div className="font-semibold text-gray-900">{selectedLLM.name}</div>
+                        <div className="text-xs text-gray-600">{selectedLLM.description}</div>
+                      </div>
+                      {(() => {
+                        const inputTokens = estimateTokens(llmPromptPreview.systemPrompt + llmPromptPreview.userPrompt);
+                        const outputTokens = 1400; // maxTokens from backend
+                        const cost = estimateLLMCost(inputTokens, outputTokens);
+                        return (
+                          <>
+                            <div className="pt-2 border-t border-green-200 space-y-2 text-sm">
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Input Tokens (est.):</span>
+                                <span className="font-semibold">{inputTokens.toLocaleString()}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Output Tokens (max):</span>
+                                <span className="font-semibold">{outputTokens.toLocaleString()}</span>
+                              </div>
+                              <div className="pt-2 border-t border-green-200">
+                                <div className="flex justify-between items-center">
+                                  <span className="text-gray-700 font-medium">Estimated Cost:</span>
+                                  <span className={`text-lg font-bold ${
+                                    selectedLLM.tier === 'free' ? 'text-green-700' : 'text-amber-700'
+                                  }`}>
+                                    {cost}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                </div>
+
+                {/* LLM Prompt Preview */}
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                      <Brain className="w-5 h-5 text-purple-600" />
+                      System Prompt
+                    </h4>
+                    <div className="bg-gray-900 text-gray-100 rounded-lg p-4 font-mono text-xs overflow-x-auto max-h-48 overflow-y-auto">
+                      <pre className="whitespace-pre-wrap">{llmPromptPreview.systemPrompt}</pre>
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                      <Sparkles className="w-5 h-5 text-purple-600" />
+                      User Prompt
+                    </h4>
+                    <div className="bg-gray-900 text-gray-100 rounded-lg p-4 font-mono text-xs overflow-x-auto max-h-64 overflow-y-auto">
+                      <pre className="whitespace-pre-wrap">{llmPromptPreview.userPrompt}</pre>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Submission Button */}
+                <div className="mt-6 pt-6 border-t border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-gray-600">
+                      <p className="font-medium text-gray-900 mb-1">Ready to submit?</p>
+                      <p>Click the "Generate Test Data" button below to proceed with LLM generation.</p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setShowInputPreview(false);
+                        setShowSubmissionDetails(false);
+                      }}
+                      className="px-4 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      Close Preview
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
         {/* Generation Actions */}
         <div className="flex flex-col gap-3">
           <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
-            <button
-              onClick={async () => {
-                setIsLoadingPreview(true);
-                try {
-                  const { dataGenerationService } = await import('../services/dataGenerationService');
-                  const preview = await dataGenerationService.requestInputPreview(config, selectedScenario);
-                  setInputPreview(preview);
-                  setShowInputPreview(true);
-                } catch (error) {
-                  console.error('Failed to load preview:', error);
-                  setCleanupStatus({
-                    type: 'error',
-                    message: error instanceof Error ? error.message : 'Failed to load input preview'
-                  });
-                } finally {
-                  setIsLoadingPreview(false);
-                }
-              }}
-              disabled={isLoadingPreview}
-              className="px-6 py-3 border-2 border-purple-300 text-purple-700 rounded-lg hover:bg-purple-50 font-semibold transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {isLoadingPreview ? (
-                <>
-                  <Loader className="w-4 h-4 animate-spin" />
-                  Loading Preview...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4" />
-                  Preview Inputs
-                </>
-              )}
-            </button>
+        <button
+          onClick={async () => {
+            setIsLoadingPreview(true);
+            try {
+              const { dataGenerationService } = await import('../services/dataGenerationService');
+              const preview = await dataGenerationService.requestInputPreview(config, selectedScenario);
+              setInputPreview(preview);
+              setShowInputPreview(true);
+              const prompts = buildLLMPromptPreview();
+              setLlmPromptPreview(prompts);
+              setShowSubmissionDetails(true);
+            } catch (error) {
+              console.error('Failed to load preview:', error);
+              setCleanupStatus({
+                type: 'error',
+                message: error instanceof Error ? error.message : 'Failed to load input preview'
+              });
+            } finally {
+              setIsLoadingPreview(false);
+            }
+          }}
+          disabled={isLoadingPreview}
+          className="px-6 py-3 border-2 border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50 font-semibold transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+        >
+          {isLoadingPreview ? (
+            <>
+              <Loader className="w-4 h-4 animate-spin" />
+              Loading Preview...
+            </>
+          ) : (
+            <>
+              <Sparkles className="w-4 h-4" />
+              Review & Submit
+            </>
+          )}
+        </button>
         <button
           onClick={handleGenerate}
-              disabled={disableGenerate}
-          className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition-all"
+              disabled={disableGenerate || !showSubmissionDetails}
+          className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition-all relative"
+          title={!showSubmissionDetails ? 'Please click "Review & Submit" first to review the configuration and see cost estimates' : undefined}
         >
           {isGenerating ? (
             <>
