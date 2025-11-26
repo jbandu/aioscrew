@@ -30,6 +30,48 @@ export interface TestDataConfig {
   generateEdgeCases: boolean;
 }
 
+export interface InputPreview {
+  scenario: {
+    id: string | null;
+    name: string;
+  };
+  crew: {
+    total: number;
+    distribution: {
+      captains: number;
+      firstOfficers: number;
+      seniorFA: number;
+      juniorFA: number;
+    };
+  };
+  timeRange: {
+    years: number;
+    startDate: string;
+    endDate: string;
+  };
+  operations: {
+    averageTripsPerMonth: number;
+    internationalRatio: number;
+    bases: string[];
+    routes: string[];
+    aircraftTypes: string[];
+  };
+  claims: {
+    frequency: number;
+    distribution: Record<string, number>;
+  };
+  operationalPatterns: {
+    violationRate: number;
+    disruptionRate: number;
+  };
+  realism: {
+    useRealisticDistributions: boolean;
+    useSeasonalPatterns: boolean;
+    generateEdgeCases: boolean;
+  };
+  projectedStats: GenerationStats;
+}
+
 export interface TestDataAgentResult {
   scenarioId?: string | null;
   stats: GenerationStats;
@@ -39,6 +81,7 @@ export interface TestDataAgentResult {
   tokensUsed: number;
   generatedAt: string;
   warning?: string;
+  inputPreview?: InputPreview;
 }
 
 interface GenerationStats {
@@ -164,7 +207,7 @@ export function normalizeConfig(config: Partial<TestDataConfig> = {}): TestDataC
 /**
  * Calculate approximate stats for progress UI + guardrails.
  */
-function calculateStats(config: TestDataConfig): GenerationStats {
+export function calculateStats(config: TestDataConfig): GenerationStats {
   const totalTrips = config.totalCrewMembers *
     config.averageTripsPerMonth *
     12 *
@@ -265,6 +308,60 @@ export interface LLMPreference {
 }
 
 /**
+ * Build a formatted input preview for display before LLM call.
+ */
+function buildInputPreview(
+  config: TestDataConfig,
+  stats: GenerationStats,
+  scenarioId?: string | null
+): InputPreview {
+  const endDate = new Date(config.startDate);
+  endDate.setFullYear(endDate.getFullYear() + config.yearsOfHistory);
+  
+  return {
+    scenario: {
+      id: scenarioId || null,
+      name: scenarioId || 'Custom Configuration'
+    },
+    crew: {
+      total: config.totalCrewMembers,
+      distribution: {
+        captains: config.captains,
+        firstOfficers: config.firstOfficers,
+        seniorFA: config.seniorFA,
+        juniorFA: config.juniorFA
+      }
+    },
+    timeRange: {
+      years: config.yearsOfHistory,
+      startDate: config.startDate,
+      endDate: endDate.toISOString().split('T')[0]
+    },
+    operations: {
+      averageTripsPerMonth: config.averageTripsPerMonth,
+      internationalRatio: config.internationalRatio,
+      bases: config.bases,
+      routes: config.routes,
+      aircraftTypes: config.aircraftTypes
+    },
+    claims: {
+      frequency: config.claimFrequency,
+      distribution: config.claimTypes
+    },
+    operationalPatterns: {
+      violationRate: config.violationRate,
+      disruptionRate: config.disruptionRate
+    },
+    realism: {
+      useRealisticDistributions: config.useRealisticDistributions,
+      useSeasonalPatterns: config.useSeasonalPatterns,
+      generateEdgeCases: config.generateEdgeCases
+    },
+    projectedStats: stats
+  };
+}
+
+/**
  * Execute the test data generation agent (Ollama-first).
  */
 export async function runTestDataGenerator(
@@ -274,6 +371,7 @@ export async function runTestDataGenerator(
 ): Promise<TestDataAgentResult> {
   const config = normalizeConfig(partialConfig);
   const stats = calculateStats(config);
+  const inputPreview = buildInputPreview(config, stats, scenarioId);
 
   warnTestDataGeneration(stats.crewMembers);
 
@@ -296,7 +394,8 @@ export async function runTestDataGenerator(
       provider: raw.provider,
       model: raw.model,
       tokensUsed: raw.usage.inputTokens + raw.usage.outputTokens,
-      generatedAt: new Date().toISOString()
+      generatedAt: new Date().toISOString(),
+      inputPreview
     };
   } catch (error) {
     console.error('TestDataGenerator agent failed, using fallback plan:', error);
@@ -310,7 +409,8 @@ export async function runTestDataGenerator(
       model: 'rule-based',
       tokensUsed: 0,
       generatedAt: new Date().toISOString(),
-      warning: error instanceof Error ? error.message : 'LLM agent unavailable'
+      warning: error instanceof Error ? error.message : 'LLM agent unavailable',
+      inputPreview
     };
   }
 }

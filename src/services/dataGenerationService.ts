@@ -73,6 +73,56 @@ interface GenerationConfig {
   generateEdgeCases: boolean;
 }
 
+export interface InputPreview {
+  scenario: {
+    id: string | null;
+    name: string;
+  };
+  crew: {
+    total: number;
+    distribution: {
+      captains: number;
+      firstOfficers: number;
+      seniorFA: number;
+      juniorFA: number;
+    };
+  };
+  timeRange: {
+    years: number;
+    startDate: string;
+    endDate: string;
+  };
+  operations: {
+    averageTripsPerMonth: number;
+    internationalRatio: number;
+    bases: string[];
+    routes: string[];
+    aircraftTypes: string[];
+  };
+  claims: {
+    frequency: number;
+    distribution: Record<string, number>;
+  };
+  operationalPatterns: {
+    violationRate: number;
+    disruptionRate: number;
+  };
+  realism: {
+    useRealisticDistributions: boolean;
+    useSeasonalPatterns: boolean;
+    generateEdgeCases: boolean;
+  };
+  projectedStats: {
+    crewMembers: number;
+    trips: number;
+    claims: number;
+    violations: number;
+    disruptions: number;
+    timeSpan: string;
+    dataPoints: number;
+  };
+}
+
 export interface TestDataAgentResponse {
   scenarioId?: string | null;
   stats: {
@@ -100,6 +150,7 @@ export interface TestDataAgentResponse {
   tokensUsed: number;
   generatedAt: string;
   warning?: string;
+  inputPreview?: InputPreview;
 }
 
 type CrewRole = 'Captain' | 'First Officer' | 'Senior FA' | 'Junior FA';
@@ -506,6 +557,33 @@ class DataGenerationService {
       model: llmPreference?.model,
       config
     });
+  }
+
+  async requestInputPreview(
+    config: GenerationConfig,
+    scenarioId?: string | null
+  ): Promise<InputPreview> {
+    const response = await fetch(`${API_URL}/api/agents/test-data/preview`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        config,
+        scenarioId
+      })
+    });
+
+    if (!response.ok) {
+      let message = 'Failed to generate input preview';
+      try {
+        const error = await response.json();
+        message = error?.message || error?.error || message;
+      } catch (err) {
+        console.warn('Failed to parse preview error response:', err);
+      }
+      throw new Error(message);
+    }
+
+    return await response.json() as InputPreview;
   }
 
   async requestLLMBlueprint(

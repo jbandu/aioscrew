@@ -6,7 +6,7 @@ import {
   Brain, Sparkles, Trash2, ShieldAlert, RefreshCcw
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import type { TestDataAgentResponse } from '../services/dataGenerationService';
+import type { TestDataAgentResponse, InputPreview } from '../services/dataGenerationService';
 
 interface DataGenerationConfig {
   // Crew configuration
@@ -346,6 +346,9 @@ export default function DataGenerationCard() {
   const [confirmPaidUsage, setConfirmPaidUsage] = useState(false);
   const [cleanupStatus, setCleanupStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [isCleaning, setIsCleaning] = useState(false);
+  const [inputPreview, setInputPreview] = useState<InputPreview | null>(null);
+  const [showInputPreview, setShowInputPreview] = useState(false);
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
 
   const handleScenarioSelect = (scenario: ScenarioPreset) => {
     setSelectedScenario(scenario.id);
@@ -392,32 +395,44 @@ export default function DataGenerationCard() {
 
     try {
       // Step 1: Import generation service
-      setProgress(10);
+      setProgress(5);
       const { dataGenerationService } = await import('../services/dataGenerationService');
 
+      // Step 1.5: Load and display input preview before LLM call
+      setProgress(8);
+      try {
+        const preview = await dataGenerationService.requestInputPreview(config, selectedScenario);
+        setInputPreview(preview);
+        setShowInputPreview(true);
+        // Brief pause to let user see the preview
+        await new Promise(resolve => setTimeout(resolve, 500));
+      } catch (previewErr) {
+        console.warn('Preview unavailable, continuing:', previewErr);
+      }
+
       // Step 2: Generate crew members
-      setProgress(20);
+      setProgress(15);
       await new Promise(resolve => setTimeout(resolve, 300));
 
       // Step 3: Generate trips
-      setProgress(40);
+      setProgress(30);
       await new Promise(resolve => setTimeout(resolve, 500));
 
       // Step 4: Generate claims
-      setProgress(60);
+      setProgress(50);
       await new Promise(resolve => setTimeout(resolve, 500));
 
       // Step 5: Generate violations and disruptions
-      setProgress(75);
+      setProgress(65);
       await new Promise(resolve => setTimeout(resolve, 300));
 
         // Step 6: Persist to database (simulated)
-        setProgress(85);
+        setProgress(75);
         const data = await dataGenerationService.generate(config);
         await dataGenerationService.persistToDatabase(data);
 
-        // Step 7: Request AI blueprint (Ollama-first)
-        setProgress(92);
+        // Step 7: Request AI blueprint (Ollama-first) - Preview already shown above
+        setProgress(85);
         let aiInsights: TestDataAgentResponse | null = null;
         try {
           const llmPreference =
@@ -851,9 +866,285 @@ export default function DataGenerationCard() {
         )}
       </div>
 
+        {/* Input Preview Section */}
+        {showInputPreview && inputPreview && (
+          <div className="p-6 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 rounded-xl border-2 border-blue-200 shadow-lg">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-white rounded-lg shadow-sm">
+                  <Sparkles className="w-6 h-6 text-purple-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">Input Preview</h3>
+                  <p className="text-sm text-gray-600">Review configuration before LLM generation</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowInputPreview(false)}
+                className="p-2 hover:bg-white rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Scenario */}
+              <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+                <div className="flex items-center gap-2 mb-3">
+                  <Briefcase className="w-5 h-5 text-blue-600" />
+                  <h4 className="font-semibold text-gray-900">Scenario</h4>
+                </div>
+                <p className="text-lg font-bold text-blue-700">{inputPreview.scenario.name}</p>
+                {inputPreview.scenario.id && (
+                  <p className="text-xs text-gray-500 mt-1">ID: {inputPreview.scenario.id}</p>
+                )}
+              </div>
+
+              {/* Crew Distribution */}
+              <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+                <div className="flex items-center gap-2 mb-3">
+                  <Users className="w-5 h-5 text-green-600" />
+                  <h4 className="font-semibold text-gray-900">Crew Composition</h4>
+                </div>
+                <div className="text-2xl font-bold text-green-700 mb-2">
+                  {inputPreview.crew.total.toLocaleString()} members
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Captains:</span>
+                    <span className="font-semibold">{inputPreview.crew.distribution.captains}%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">First Officers:</span>
+                    <span className="font-semibold">{inputPreview.crew.distribution.firstOfficers}%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Senior FA:</span>
+                    <span className="font-semibold">{inputPreview.crew.distribution.seniorFA}%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Junior FA:</span>
+                    <span className="font-semibold">{inputPreview.crew.distribution.juniorFA}%</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Time Range */}
+              <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+                <div className="flex items-center gap-2 mb-3">
+                  <Calendar className="w-5 h-5 text-purple-600" />
+                  <h4 className="font-semibold text-gray-900">Time Range</h4>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Duration:</span>
+                    <span className="font-bold text-purple-700">{inputPreview.timeRange.years} years</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Start:</span>
+                    <span className="font-semibold text-gray-900">{inputPreview.timeRange.startDate}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">End:</span>
+                    <span className="font-semibold text-gray-900">{inputPreview.timeRange.endDate}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Operations */}
+              <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+                <div className="flex items-center gap-2 mb-3">
+                  <Plane className="w-5 h-5 text-orange-600" />
+                  <h4 className="font-semibold text-gray-900">Operations</h4>
+                </div>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Avg Trips/Month:</span>
+                    <span className="font-semibold">{inputPreview.operations.averageTripsPerMonth}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">International:</span>
+                    <span className="font-semibold">{(inputPreview.operations.internationalRatio * 100).toFixed(0)}%</span>
+                  </div>
+                  <div className="mt-3">
+                    <div className="text-xs text-gray-500 mb-1">Bases ({inputPreview.operations.bases.length}):</div>
+                    <div className="flex flex-wrap gap-1">
+                      {inputPreview.operations.bases.map((base) => (
+                        <span key={base} className="px-2 py-0.5 bg-orange-100 text-orange-700 rounded text-xs font-medium">
+                          {base}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="mt-2">
+                    <div className="text-xs text-gray-500 mb-1">Aircraft ({inputPreview.operations.aircraftTypes.length}):</div>
+                    <div className="flex flex-wrap gap-1">
+                      {inputPreview.operations.aircraftTypes.map((type) => (
+                        <span key={type} className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-medium">
+                          {type}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Claims Configuration */}
+              <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+                <div className="flex items-center gap-2 mb-3">
+                  <DollarSign className="w-5 h-5 text-purple-600" />
+                  <h4 className="font-semibold text-gray-900">Claims</h4>
+                </div>
+                <div className="mb-3">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm text-gray-600">Frequency:</span>
+                    <span className="font-bold text-purple-700">{inputPreview.claims.frequency} per crew/year</span>
+                  </div>
+                </div>
+                <div className="space-y-1 text-xs">
+                  <div className="text-gray-500 mb-2 font-medium">Distribution:</div>
+                  {Object.entries(inputPreview.claims.distribution).map(([type, percent]) => (
+                    <div key={type} className="flex items-center justify-between">
+                      <span className="text-gray-600 capitalize">{type.replace(/([A-Z])/g, ' $1').trim()}:</span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-24 bg-gray-200 rounded-full h-1.5">
+                          <div
+                            className="bg-purple-600 h-1.5 rounded-full"
+                            style={{ width: `${percent}%` }}
+                          />
+                        </div>
+                        <span className="font-semibold w-8 text-right">{percent}%</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Operational Patterns */}
+              <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+                <div className="flex items-center gap-2 mb-3">
+                  <AlertTriangle className="w-5 h-5 text-red-600" />
+                  <h4 className="font-semibold text-gray-900">Operational Patterns</h4>
+                </div>
+                <div className="space-y-3">
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-sm text-gray-600">Violation Rate:</span>
+                      <span className="font-bold text-red-700">{inputPreview.operationalPatterns.violationRate} per 1k trips</span>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-sm text-gray-600">Disruption Rate:</span>
+                      <span className="font-bold text-orange-700">{inputPreview.operationalPatterns.disruptionRate} per 1k trips</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Realism Settings */}
+              <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+                <div className="flex items-center gap-2 mb-3">
+                  <Settings className="w-5 h-5 text-indigo-600" />
+                  <h4 className="font-semibold text-gray-900">Realism Settings</h4>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    {inputPreview.realism.useRealisticDistributions ? (
+                      <CheckCircle className="w-4 h-4 text-green-600" />
+                    ) : (
+                      <X className="w-4 h-4 text-gray-400" />
+                    )}
+                    <span className="text-sm text-gray-700">Realistic Distributions</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {inputPreview.realism.useSeasonalPatterns ? (
+                      <CheckCircle className="w-4 h-4 text-green-600" />
+                    ) : (
+                      <X className="w-4 h-4 text-gray-400" />
+                    )}
+                    <span className="text-sm text-gray-700">Seasonal Patterns</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {inputPreview.realism.generateEdgeCases ? (
+                      <CheckCircle className="w-4 h-4 text-green-600" />
+                    ) : (
+                      <X className="w-4 h-4 text-gray-400" />
+                    )}
+                    <span className="text-sm text-gray-700">Edge Cases</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Projected Stats */}
+              <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg p-4 shadow-lg text-white">
+                <div className="flex items-center gap-2 mb-4">
+                  <TrendingUp className="w-5 h-5" />
+                  <h4 className="font-semibold">Projected Statistics</h4>
+                </div>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <div className="text-indigo-100 text-xs mb-1">Crew Members</div>
+                    <div className="text-2xl font-bold">{inputPreview.projectedStats.crewMembers.toLocaleString()}</div>
+                  </div>
+                  <div>
+                    <div className="text-indigo-100 text-xs mb-1">Trips</div>
+                    <div className="text-2xl font-bold">{inputPreview.projectedStats.trips.toLocaleString()}</div>
+                  </div>
+                  <div>
+                    <div className="text-indigo-100 text-xs mb-1">Claims</div>
+                    <div className="text-2xl font-bold">{inputPreview.projectedStats.claims.toLocaleString()}</div>
+                  </div>
+                  <div>
+                    <div className="text-indigo-100 text-xs mb-1">Violations</div>
+                    <div className="text-2xl font-bold">{inputPreview.projectedStats.violations.toLocaleString()}</div>
+                  </div>
+                  <div className="col-span-2">
+                    <div className="text-indigo-100 text-xs mb-1">Total Data Points</div>
+                    <div className="text-3xl font-bold">{inputPreview.projectedStats.dataPoints.toLocaleString()}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Generation Actions */}
         <div className="flex flex-col gap-3">
           <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
+            <button
+              onClick={async () => {
+                setIsLoadingPreview(true);
+                try {
+                  const { dataGenerationService } = await import('../services/dataGenerationService');
+                  const preview = await dataGenerationService.requestInputPreview(config, selectedScenario);
+                  setInputPreview(preview);
+                  setShowInputPreview(true);
+                } catch (error) {
+                  console.error('Failed to load preview:', error);
+                  setCleanupStatus({
+                    type: 'error',
+                    message: error instanceof Error ? error.message : 'Failed to load input preview'
+                  });
+                } finally {
+                  setIsLoadingPreview(false);
+                }
+              }}
+              disabled={isLoadingPreview}
+              className="px-6 py-3 border-2 border-purple-300 text-purple-700 rounded-lg hover:bg-purple-50 font-semibold transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {isLoadingPreview ? (
+                <>
+                  <Loader className="w-4 h-4 animate-spin" />
+                  Loading Preview...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4" />
+                  Preview Inputs
+                </>
+              )}
+            </button>
         <button
           onClick={handleGenerate}
               disabled={disableGenerate}
