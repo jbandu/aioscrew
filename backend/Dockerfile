@@ -27,23 +27,25 @@ WORKDIR /app/frontend
 ARG VITE_DATABASE_URL
 ARG VITE_API_URL
 
-# Copy frontend package files (from root)
+# Copy frontend package files (from root) - do this first for better caching
 COPY package*.json ./
 
 # Install frontend dependencies
 # Explicitly unset NPM_CONFIG_PRODUCTION to avoid deprecation warnings
 RUN sh -c "unset NPM_CONFIG_PRODUCTION && npm ci"
 
-# Copy frontend source code
-COPY src ./src
-COPY public ./public
-COPY index.html ./
+# Copy frontend config files (these change less frequently than source)
 COPY vite.config.ts ./
 COPY tsconfig.json ./
 COPY tsconfig.app.json ./
 COPY tsconfig.node.json ./
 COPY postcss.config.js ./
 COPY tailwind.config.js ./
+
+# Copy frontend source code (copy these last as they change most frequently)
+COPY src ./src
+COPY public ./public
+COPY index.html ./
 
 # Build frontend with environment variables
 ENV VITE_DATABASE_URL=$VITE_DATABASE_URL
