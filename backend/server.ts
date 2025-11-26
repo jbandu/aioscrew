@@ -40,6 +40,24 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'healthy', timestamp: new Date().toISOString() });
 });
 
+// Version and deployment info endpoint
+app.get('/api/version', (req, res) => {
+  res.status(200).json({
+    version: '1.0.0',
+    environment: process.env.NODE_ENV || 'development',
+    railway: {
+      environment: process.env.RAILWAY_ENVIRONMENT || 'not-set',
+      publicDomain: process.env.RAILWAY_PUBLIC_DOMAIN || 'not-set',
+      deployment: process.env.RAILWAY_DEPLOYMENT_ID || 'not-set',
+      service: process.env.RAILWAY_SERVICE_NAME || 'not-set'
+    },
+    deployedAt: process.env.RAILWAY_DEPLOYMENT_ID ? new Date().toISOString() : 'unknown',
+    buildTimestamp: new Date().toISOString(),
+    node: process.version,
+    uptime: process.uptime()
+  });
+});
+
 // Middleware
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
