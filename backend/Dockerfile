@@ -8,7 +8,8 @@ WORKDIR /app/backend
 COPY backend/package*.json ./
 
 # Install ALL dependencies (including devDependencies for building)
-RUN npm ci
+# Explicitly unset NPM_CONFIG_PRODUCTION to avoid deprecation warnings
+RUN sh -c "unset NPM_CONFIG_PRODUCTION && npm ci"
 
 # Copy backend source code
 COPY backend/ .
@@ -30,7 +31,8 @@ ARG VITE_API_URL
 COPY package*.json ./
 
 # Install frontend dependencies
-RUN npm ci
+# Explicitly unset NPM_CONFIG_PRODUCTION to avoid deprecation warnings
+RUN sh -c "unset NPM_CONFIG_PRODUCTION && npm ci"
 
 # Copy frontend source code
 COPY src ./src
@@ -57,7 +59,8 @@ WORKDIR /app
 COPY backend/package*.json ./
 
 # Install production dependencies only
-RUN npm ci --omit=dev
+# Explicitly unset NPM_CONFIG_PRODUCTION to avoid deprecation warnings
+RUN sh -c "unset NPM_CONFIG_PRODUCTION && npm ci --omit=dev"
 
 # Copy built backend from backend-builder
 COPY --from=backend-builder /app/backend/dist ./dist
