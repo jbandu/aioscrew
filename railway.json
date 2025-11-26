@@ -4,6 +4,13 @@
     "builder": "DOCKERFILE",
     "dockerfilePath": "backend/Dockerfile",
     "buildContext": ".",
+    "watchPatterns": [
+      "backend/**",
+      "src/**",
+      "package.json",
+      "package-lock.json",
+      "railway.json"
+    ],
     "buildArgs": {
       "VITE_DATABASE_URL": "${{DATABASE_URL}}",
       "VITE_API_URL": "https://${{RAILWAY_PUBLIC_DOMAIN}}"
