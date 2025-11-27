@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Plane, Calendar, Target, DollarSign, BarChart3, Scale, Building2, Sparkles } from 'lucide-react';
+import { Plane, Calendar, Target, DollarSign, BarChart3, Scale, Building2, Sparkles, FlaskConical } from 'lucide-react';
 import { UserRole } from '../types';
 import TestGenerator2Page from './TestGenerator2Page';
+import TestLabPage from './TestLabPage';
 
 interface LandingPageProps {
   onSelectRole: (role: UserRole) => void;
@@ -116,10 +117,16 @@ const personas = [
 
 export default function LandingPage({ onSelectRole }: LandingPageProps) {
   const [showTestGenerator2, setShowTestGenerator2] = useState(false);
+  const [showTestLab, setShowTestLab] = useState(false);
 
   // If showing test generator 2.0, render it full screen
   if (showTestGenerator2) {
     return <TestGenerator2Page onBack={() => setShowTestGenerator2(false)} />;
+  }
+
+  // If showing test lab, render it full screen
+  if (showTestLab) {
+    return <TestLabPage onBack={() => setShowTestLab(false)} />;
   }
 
   return (
@@ -203,6 +210,42 @@ export default function LandingPage({ onSelectRole }: LandingPageProps) {
                 </ul>
                 <div className="w-full bg-gradient-to-r from-pink-500/80 to-purple-500/80 border border-white/10 text-white/90 py-3 rounded-lg hover:opacity-90 transition-opacity font-semibold text-center">
                   Open Test Generator 2.0
+                </div>
+              </div>
+            </button>
+
+            {/* Test Lab Card */}
+            <button
+              onClick={() => setShowTestLab(true)}
+              className="bg-slate-900/60 border border-cyan-500/30 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 text-left overflow-hidden backdrop-blur"
+            >
+              <div className="relative bg-gradient-to-br from-cyan-900 via-blue-900 to-slate-900 p-6">
+                <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.3),_transparent_45%)]" />
+                <FlaskConical className="relative w-12 h-12 text-white mb-3" />
+                <h3 className="relative text-xl font-bold text-white">Test Lab</h3>
+                <p className="relative text-white/80 text-sm">Workflow-Specific Testing</p>
+              </div>
+              <div className="p-6 bg-slate-950/40">
+                <ul className="space-y-2 text-sm text-slate-200 mb-6">
+                  <li className="flex items-start">
+                    <span className="text-emerald-300 mr-2">✓</span>
+                    8 pre-built scenarios (COPA & Avelo)
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-emerald-300 mr-2">✓</span>
+                    Real-time agent reasoning display
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-emerald-300 mr-2">✓</span>
+                    Role-based demo views
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-emerald-300 mr-2">✓</span>
+                    Export results to PDF/CSV
+                  </li>
+                </ul>
+                <div className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 border border-white/10 text-white/90 py-3 rounded-lg hover:opacity-90 transition-opacity font-semibold text-center">
+                  Launch Test Lab
                 </div>
               </div>
             </button>
