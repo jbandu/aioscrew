@@ -199,17 +199,22 @@ router.get('/health', (req: Request, res: Response) => {
  * Returns formatted input preview before LLM call.
  */
 router.post('/test-data/preview', async (req: Request, res: Response) => {
+  console.log('🔍 [TEST-DATA-PREVIEW] Endpoint called');
+  console.log('🔍 [TEST-DATA-PREVIEW] Request body keys:', Object.keys(req.body || {}));
   try {
     const { config, scenarioId } = req.body || {};
 
     if (!config || typeof config !== 'object') {
+      console.log('❌ [TEST-DATA-PREVIEW] Missing or invalid config');
       return res.status(400).json({
         error: 'Missing config in request body'
       });
     }
 
+    console.log('✅ [TEST-DATA-PREVIEW] Config received, scenario:', scenarioId || 'custom');
     const normalizedConfig = normalizeConfig(config);
     const stats = calculateStats(normalizedConfig);
+    console.log('✅ [TEST-DATA-PREVIEW] Stats calculated, dataPoints:', stats.dataPoints);
     
     const endDate = new Date(normalizedConfig.startDate);
     endDate.setFullYear(endDate.getFullYear() + normalizedConfig.yearsOfHistory);
@@ -256,9 +261,10 @@ router.post('/test-data/preview', async (req: Request, res: Response) => {
       projectedStats: stats
     };
 
+    console.log('✅ [TEST-DATA-PREVIEW] Sending preview response');
     res.json(preview);
   } catch (error) {
-    console.error('❌ Test data preview error:', error);
+    console.error('❌ [TEST-DATA-PREVIEW] Error:', error);
     res.status(500).json({
       error: 'Failed to generate input preview',
       message: error instanceof Error ? error.message : 'Unknown error'
