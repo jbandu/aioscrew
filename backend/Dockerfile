@@ -50,7 +50,8 @@ COPY index.html ./
 # Build frontend with environment variables
 ENV VITE_DATABASE_URL=$VITE_DATABASE_URL
 ENV VITE_API_URL=$VITE_API_URL
-RUN npm run build
+# Use vite build directly to avoid running build:backend script from package.json
+RUN npx vite build
 
 # Production stage
 FROM node:20-alpine
