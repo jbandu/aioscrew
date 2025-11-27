@@ -18,6 +18,9 @@ import adminRoutes from './api/routes/admin.js';
 import cbaRoutes from './api/cba-routes.js';
 import crewSchedulingRoutes from './api/routes/crew-scheduling.js';
 import testLabRoutes from './api/routes/test-lab.js';
+import fleetRoutes from './api/routes/fleet.js';
+import fleetScraperRoutes from './api/routes/fleet-scraper.js';
+import logger, { logRequest } from './utils/logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -77,13 +80,11 @@ app.use((req, res, next) => {
 
 // Request logging with timing
 app.use((req, res, next) => {
-  const timestamp = new Date().toISOString();
   const start = Date.now();
-  console.log(`[${timestamp}] ${req.method} ${req.path}`);
 
   res.on('finish', () => {
     const duration = Date.now() - start;
-    console.log(`[${timestamp}] ${req.method} ${req.path} - ${res.statusCode} (${duration}ms)`);
+    logRequest(req.method, req.path, res.statusCode, duration);
   });
 
   next();
@@ -95,25 +96,27 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/cba', cbaRoutes);
 app.use('/api/crew-scheduling', crewSchedulingRoutes);
 app.use('/api/test-lab', testLabRoutes);
+app.use('/api/fleet', fleetRoutes);
+app.use('/api/v1', fleetScraperRoutes);
 
 // WebSocket connection handling
 io.on('connection', (socket) => {
-  console.log(`🔌 WebSocket client connected: ${socket.id}`);
+  logger.info(`WebSocket client connected: ${socket.id}`);
 
   socket.on('disconnect', () => {
-    console.log(`🔌 WebSocket client disconnected: ${socket.id}`);
+    logger.info(`WebSocket client disconnected: ${socket.id}`);
   });
 
   // Join admin room for agent activity updates
   socket.on('join:admin', () => {
     socket.join('admin');
-    console.log(`👤 Client ${socket.id} joined admin room`);
+    logger.debug(`Client ${socket.id} joined admin room`);
   });
 
   // Leave admin room
   socket.on('leave:admin', () => {
     socket.leave('admin');
-    console.log(`👤 Client ${socket.id} left admin room`);
+    logger.debug(`Client ${socket.id} left admin room`);
   });
 });
 
@@ -152,21 +155,21 @@ if (isProduction) {
   }
 }
 
-console.log(`📁 Serving static files from: ${publicPath}`);
-console.log(`📁 __dirname: ${__dirname}`);
-console.log(`📁 NODE_ENV: ${process.env.NODE_ENV || 'not set'}`);
-console.log(`📁 RAILWAY_ENVIRONMENT: ${process.env.RAILWAY_ENVIRONMENT || 'not set'}`);
+logger.info(`Serving static files from: ${publicPath}`);
+logger.debug(`__dirname: ${__dirname}`);
+logger.debug(`NODE_ENV: ${process.env.NODE_ENV || 'not set'}`);
+logger.debug(`RAILWAY_ENVIRONMENT: ${process.env.RAILWAY_ENVIRONMENT || 'not set'}`);
 
 // Verify index.html exists
 const indexPath = path.join(publicPath, 'index.html');
 if (!fs.existsSync(indexPath)) {
-  console.error(`⚠️  WARNING: index.html not found at ${indexPath}`);
-  console.error(`   Attempting to list directory contents of ${publicPath}:`);
+  logger.warn(`index.html not found at ${indexPath}`);
+  logger.warn(`Attempting to list directory contents of ${publicPath}:`);
   try {
     const files = fs.readdirSync(publicPath);
-    console.error(`   Found files: ${files.join(', ')}`);
+    logger.warn(`Found files: ${files.join(', ')}`);
   } catch (err) {
-    console.error(`   Could not read directory: ${err}`);
+    logger.error(`Could not read directory: ${err}`);
   }
 }
 app.use(express.static(publicPath));
@@ -183,8 +186,7 @@ app.get('*', (req, res, next) => {
   const indexPath = path.join(publicPath, 'index.html');
   res.sendFile(indexPath, (err) => {
     if (err) {
-      console.error('Error serving index.html:', err);
-      console.error(`Attempted path: ${indexPath}`);
+      logger.error('Error serving index.html', { error: err, path: indexPath });
       res.status(500).send('Error loading application');
     }
   });
@@ -199,7 +201,7 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 
   // Handle JSON parsing errors
   if (err.type === 'entity.parse.failed' || err instanceof SyntaxError) {
-    console.error('JSON parsing error:', err);
+    logger.error('JSON parsing error', { error: err, path: req.path });
     return res.status(400).json({
       error: 'Invalid JSON in request body',
       message: 'The request body contains invalid JSON. Please check your request format.',
@@ -208,13 +210,18 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   }
 
   // Handle other errors
-  console.error('Unhandled error:', err);
-  
+  logger.error('Unhandled error', {
+    error: err,
+    path: req.path,
+    method: req.method,
+    statusCode: err.statusCode || err.status || 500
+  });
+
   const statusCode = err.statusCode || err.status || 500;
   res.status(statusCode).json({
     error: 'Internal server error',
-    message: process.env.NODE_ENV === 'production' 
-      ? 'Internal server error' 
+    message: process.env.NODE_ENV === 'production'
+      ? 'Internal server error'
       : err.message || 'Unknown error',
     ...(process.env.NODE_ENV === 'development' && {
       stack: err.stack
@@ -229,56 +236,56 @@ httpServer.listen(PORT, '0.0.0.0', () => {
     ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN || 'your-app.up.railway.app'}`
     : `http://localhost:${PORT}`;
 
-  console.log('\n🚀 Aioscrew AI Agent Backend');
-  console.log('================================');
-  console.log(`📡 Server running on port ${PORT}`);
-  console.log(`🌐 API: ${baseUrl}`);
-  console.log(`🔗 Frontend: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
-  console.log(`🤖 Agents: Flight Time, Premium Pay, Compliance`);
-  console.log(`🔌 WebSocket: Enabled for real-time updates`);
-  console.log(`🔑 Claude API: ${process.env.ANTHROPIC_API_KEY ? 'Configured ✓' : 'Missing ✗'}`);
-  console.log(`💾 Database: ${process.env.DATABASE_URL ? 'Connected ✓' : 'Missing ✗'}`);
-  console.log(`📊 Neo4j: ${process.env.NEO4J_URI ? 'Configured ✓' : 'Missing ✗'}`);
-  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log('================================');
-  console.log(`✅ Server is listening and ready to accept connections\n`);
+  logger.info('🚀 Aioscrew AI Agent Backend');
+  logger.info('================================');
+  logger.info(`📡 Server running on port ${PORT}`);
+  logger.info(`🌐 API: ${baseUrl}`);
+  logger.info(`🔗 Frontend: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
+  logger.info(`🤖 Agents: Flight Time, Premium Pay, Compliance`);
+  logger.info(`🔌 WebSocket: Enabled for real-time updates`);
+  logger.info(`🔑 Claude API: ${process.env.ANTHROPIC_API_KEY ? 'Configured ✓' : 'Missing ✗'}`);
+  logger.info(`💾 Database: ${process.env.DATABASE_URL ? 'Connected ✓' : 'Missing ✗'}`);
+  logger.info(`📊 Neo4j: ${process.env.NEO4J_URI ? 'Configured ✓' : 'Missing ✗'}`);
+  logger.info(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  logger.info('================================');
+  logger.info(`✅ Server is listening and ready to accept connections`);
 });
 
 // Handle server errors
 httpServer.on('error', (error: NodeJS.ErrnoException) => {
-  console.error('❌ Server error:', error);
+  logger.error('Server error', { error, code: error.code });
   if (error.code === 'EADDRINUSE') {
-    console.error(`Port ${PORT} is already in use`);
+    logger.error(`Port ${PORT} is already in use`);
   }
   process.exit(1);
 });
 
 // Graceful shutdown
 process.on('SIGTERM', async () => {
-  console.log('SIGTERM received, shutting down gracefully...');
+  logger.info('SIGTERM received, shutting down gracefully...');
   httpServer.close(async () => {
     try {
       const { closeNeo4jDriver } = await import('./services/neo4j-service.js');
       await closeNeo4jDriver();
-      console.log('✅ Server closed gracefully');
+      logger.info('✅ Server closed gracefully');
       process.exit(0);
     } catch (error) {
-      console.error('Error during shutdown:', error);
+      logger.error('Error during shutdown', { error });
       process.exit(1);
     }
   });
 });
 
 process.on('SIGINT', async () => {
-  console.log('\nSIGINT received, shutting down gracefully...');
+  logger.info('SIGINT received, shutting down gracefully...');
   httpServer.close(async () => {
     try {
       const { closeNeo4jDriver } = await import('./services/neo4j-service.js');
       await closeNeo4jDriver();
-      console.log('✅ Server closed gracefully');
+      logger.info('✅ Server closed gracefully');
       process.exit(0);
     } catch (error) {
-      console.error('Error during shutdown:', error);
+      logger.error('Error during shutdown', { error });
       process.exit(1);
     }
   });

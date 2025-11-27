@@ -1,10 +1,19 @@
 import { neon } from '@neondatabase/serverless';
 
-const sql = neon(import.meta.env.VITE_DATABASE_URL || '');
+// For local development, skip direct database access from frontend
+// All database operations should go through the backend API
+const sql = import.meta.env.VITE_DATABASE_URL
+  ? neon(import.meta.env.VITE_DATABASE_URL)
+  : null as any;
 
 export { sql };
 
 export async function initializeDatabase() {
+  // Skip database initialization - backend handles all database operations
+  console.log('Skipping frontend database initialization - using backend API');
+  return true;
+
+  /* Original code - disabled for local development
   try {
     await sql`
       CREATE TABLE IF NOT EXISTS crew_members (
@@ -122,9 +131,15 @@ export async function initializeDatabase() {
     console.error('Database initialization error:', error);
     return false;
   }
+  */
 }
 
 export async function seedDatabase() {
+  // Skip database seeding - backend handles all database operations
+  console.log('Skipping frontend database seeding - using backend API');
+  return;
+
+  /* Original code - disabled for local development
   try {
     const crewExists = await sql`SELECT COUNT(*) as count FROM crew_members`;
     if (crewExists[0].count > 0) {
@@ -194,4 +209,5 @@ export async function seedDatabase() {
   } catch (error) {
     console.error('Database seeding error:', error);
   }
+  */
 }
