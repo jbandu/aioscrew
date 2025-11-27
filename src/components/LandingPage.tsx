@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { Plane, Calendar, Target, DollarSign, BarChart3, Scale, Building2, Cpu, Sparkles } from 'lucide-react';
+import { Plane, Calendar, Target, DollarSign, BarChart3, Scale, Building2, Sparkles } from 'lucide-react';
 import { UserRole } from '../types';
-import AutomationLabsPage from './AutomationLabsPage';
 import TestGenerator2Page from './TestGenerator2Page';
 
 interface LandingPageProps {
@@ -116,13 +115,7 @@ const personas = [
 ] as const;
 
 export default function LandingPage({ onSelectRole }: LandingPageProps) {
-  const [showAutomationLab, setShowAutomationLab] = useState(false);
   const [showTestGenerator2, setShowTestGenerator2] = useState(false);
-
-  // If showing automation lab, render it full screen
-  if (showAutomationLab) {
-    return <AutomationLabsPage onBack={() => setShowAutomationLab(false)} />;
-  }
 
   // If showing test generator 2.0, render it full screen
   if (showTestGenerator2) {
@@ -181,38 +174,6 @@ export default function LandingPage({ onSelectRole }: LandingPageProps) {
                 </button>
               );
             })}
-
-            {/* Automation Labs Card */}
-            <button
-              onClick={() => setShowAutomationLab(true)}
-              className="bg-slate-900/60 border border-cyan-500/30 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 text-left overflow-hidden backdrop-blur"
-            >
-              <div className="relative bg-gradient-to-br from-slate-900 via-cyan-900 to-blue-900 p-6">
-                <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.3),_transparent_45%)]" />
-                <Cpu className="relative w-12 h-12 text-white mb-3" />
-                <h3 className="relative text-xl font-bold text-white">Automation Lab</h3>
-                <p className="relative text-white/80 text-sm">Data Generation & Testing</p>
-              </div>
-              <div className="p-6 bg-slate-950/40">
-                <ul className="space-y-2 text-sm text-slate-200 mb-6">
-                  <li className="flex items-start">
-                    <span className="text-emerald-300 mr-2">✓</span>
-                    Generate realistic test data
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-emerald-300 mr-2">✓</span>
-                    AI-powered scenario presets
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-emerald-300 mr-2">✓</span>
-                    Ollama & Claude integration
-                  </li>
-                </ul>
-                <div className="w-full bg-gradient-to-r from-cyan-500/80 to-blue-500/80 border border-white/10 text-white/90 py-3 rounded-lg hover:opacity-90 transition-opacity font-semibold text-center">
-                  Open Automation Lab
-                </div>
-              </div>
-            </button>
 
             {/* Test Generator 2.0 Card */}
             <button
