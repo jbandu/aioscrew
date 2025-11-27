@@ -563,6 +563,8 @@ class DataGenerationService {
     config: GenerationConfig,
     scenarioId?: string | null
   ): Promise<InputPreview> {
+    console.log('🌐 [DATA-GEN-SERVICE] Calling preview endpoint:', `${API_URL}/api/agents/test-data/preview`);
+    console.log('🌐 [DATA-GEN-SERVICE] Scenario:', scenarioId || 'custom');
     const response = await fetch(`${API_URL}/api/agents/test-data/preview`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -572,6 +574,7 @@ class DataGenerationService {
       })
     });
 
+    console.log('🌐 [DATA-GEN-SERVICE] Preview response status:', response.status);
     if (!response.ok) {
       let message = 'Failed to generate input preview';
       try {

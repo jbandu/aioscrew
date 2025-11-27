@@ -332,6 +332,8 @@ const DEFAULT_CONFIG: DataGenerationConfig = {
 };
 
 export default function DataGenerationCard() {
+  console.log('🎨 [TEST-GEN-UI] DataGenerationCard component loaded - NEW VERSION with Review & Submit');
+
   const [selectedScenario, setSelectedScenario] = useState<string | null>(null);
   const [config, setConfig] = useState<DataGenerationConfig>(DEFAULT_CONFIG);
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -1359,17 +1361,22 @@ Include concrete SQL-ready guidance, QA checks, and a few sample rows for each e
           <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
         <button
           onClick={async () => {
+            console.log('🔍 [TEST-GEN-UI] Review & Submit button clicked');
             setIsLoadingPreview(true);
             try {
+              console.log('🔍 [TEST-GEN-UI] Loading preview service...');
               const { dataGenerationService } = await import('../services/dataGenerationService');
+              console.log('🔍 [TEST-GEN-UI] Calling requestInputPreview API...');
               const preview = await dataGenerationService.requestInputPreview(config, selectedScenario);
+              console.log('✅ [TEST-GEN-UI] Preview received:', preview);
               setInputPreview(preview);
               setShowInputPreview(true);
               const prompts = buildLLMPromptPreview();
               setLlmPromptPreview(prompts);
               setShowSubmissionDetails(true);
+              console.log('✅ [TEST-GEN-UI] Preview state updated, submission details shown');
             } catch (error) {
-              console.error('Failed to load preview:', error);
+              console.error('❌ [TEST-GEN-UI] Failed to load preview:', error);
               setCleanupStatus({
                 type: 'error',
                 message: error instanceof Error ? error.message : 'Failed to load input preview'
