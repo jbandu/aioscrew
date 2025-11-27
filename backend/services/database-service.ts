@@ -2,6 +2,9 @@
  * Database service for fetching claim, trip, and crew data
  */
 
+import { config } from 'dotenv';
+config();
+
 import { neon } from '@neondatabase/serverless';
 import type { ClaimInput, TripData, CrewData, HistoricalData } from '../agents/shared/types.js';
 

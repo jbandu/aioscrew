@@ -863,7 +863,10 @@ Include concrete SQL-ready guidance, QA checks, and a few sample rows for each e
                 <input
                   type="number"
                   value={config.totalCrewMembers}
-                  onChange={(e) => setConfig({ ...config, totalCrewMembers: parseInt(e.target.value) || 0 })}
+                  onChange={(e) => {
+                    const val = e.target.value === '' ? 0 : parseInt(e.target.value);
+                    if (!isNaN(val)) setConfig({ ...config, totalCrewMembers: val });
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -875,7 +878,10 @@ Include concrete SQL-ready guidance, QA checks, and a few sample rows for each e
                 <input
                   type="number"
                   value={config.yearsOfHistory}
-                  onChange={(e) => setConfig({ ...config, yearsOfHistory: parseInt(e.target.value) || 0 })}
+                  onChange={(e) => {
+                    const val = e.target.value === '' ? 0 : parseInt(e.target.value);
+                    if (!isNaN(val)) setConfig({ ...config, yearsOfHistory: val });
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -887,7 +893,10 @@ Include concrete SQL-ready guidance, QA checks, and a few sample rows for each e
                 <input
                   type="number"
                   value={config.averageTripsPerMonth}
-                  onChange={(e) => setConfig({ ...config, averageTripsPerMonth: parseInt(e.target.value) || 0 })}
+                  onChange={(e) => {
+                    const val = e.target.value === '' ? 0 : parseInt(e.target.value);
+                    if (!isNaN(val)) setConfig({ ...config, averageTripsPerMonth: val });
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -902,7 +911,10 @@ Include concrete SQL-ready guidance, QA checks, and a few sample rows for each e
                   min="0"
                   max="1"
                   value={config.internationalRatio}
-                  onChange={(e) => setConfig({ ...config, internationalRatio: parseFloat(e.target.value) || 0 })}
+                  onChange={(e) => {
+                    const val = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                    if (!isNaN(val)) setConfig({ ...config, internationalRatio: val });
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -914,7 +926,10 @@ Include concrete SQL-ready guidance, QA checks, and a few sample rows for each e
                 <input
                   type="number"
                   value={config.claimFrequency}
-                  onChange={(e) => setConfig({ ...config, claimFrequency: parseInt(e.target.value) || 0 })}
+                  onChange={(e) => {
+                    const val = e.target.value === '' ? 0 : parseInt(e.target.value);
+                    if (!isNaN(val)) setConfig({ ...config, claimFrequency: val });
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -926,7 +941,10 @@ Include concrete SQL-ready guidance, QA checks, and a few sample rows for each e
                 <input
                   type="number"
                   value={config.violationRate}
-                  onChange={(e) => setConfig({ ...config, violationRate: parseInt(e.target.value) || 0 })}
+                  onChange={(e) => {
+                    const val = e.target.value === '' ? 0 : parseInt(e.target.value);
+                    if (!isNaN(val)) setConfig({ ...config, violationRate: val });
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
               </div>

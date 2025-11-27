@@ -15,6 +15,7 @@ import {
 import type { AgentInput } from '../../agents/shared/types.js';
 import { runTestDataGenerator, normalizeConfig, calculateStats } from '../../agents/core/test-data-generator.js';
 import type { TestDataConfig } from '../../agents/core/test-data-generator.js';
+import { insertTestData } from '../../services/test-data-inserter.js';
 
 const router = Router();
 const sql = process.env.DATABASE_URL ? neon(process.env.DATABASE_URL) : null;
@@ -286,12 +287,23 @@ router.post('/test-data/generate', async (req: Request, res: Response) => {
       });
     }
 
-    const result = await runTestDataGenerator(config, scenarioId, llmPreference);
-    res.json(result);
+    // Step 1: Get AI blueprint (optional but useful for insights)
+    const blueprint = await runTestDataGenerator(config, scenarioId, llmPreference);
+
+    // Step 2: Generate and insert actual test data into database
+    const normalized = normalizeConfig(config);
+    const insertionResult = await insertTestData(normalized);
+
+    // Return both the AI blueprint and insertion results
+    res.json({
+      ...blueprint,
+      insertion: insertionResult,
+      success: true
+    });
   } catch (error) {
     console.error('❌ Test data generation error:', error);
     res.status(500).json({
-      error: 'Failed to generate test data blueprint',
+      error: 'Failed to generate test data',
       message: error instanceof Error ? error.message : 'Unknown error'
     });
   }
