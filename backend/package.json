@@ -9,7 +9,8 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "seed:neo4j": "tsx scripts/seed-neo4j.ts"
+    "seed:neo4j": "tsx scripts/seed-neo4j.ts",
+    "seed:test-lab": "tsx scripts/seed-test-lab.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.33.1",
