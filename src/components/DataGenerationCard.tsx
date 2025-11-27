@@ -128,7 +128,7 @@ const LLM_OPTIONS: LLMOption[] = [
   }
 ];
 
-const MASSIVE_DATA_THRESHOLD = 250000;
+const MASSIVE_DATA_THRESHOLD = 12500;
 
 const SCENARIO_PRESETS: ScenarioPreset[] = [
   {
@@ -137,12 +137,12 @@ const SCENARIO_PRESETS: ScenarioPreset[] = [
     description: 'Balanced, realistic airline operations with typical patterns',
     icon: Plane,
     config: {
-      totalCrewMembers: 500,
-      averageTripsPerMonth: 15,
+      totalCrewMembers: 25,
+      averageTripsPerMonth: 1,
       internationalRatio: 0.3,
-      claimFrequency: 4,
-      violationRate: 2,
-      disruptionRate: 5,
+      claimFrequency: 1,
+      violationRate: 0.1,
+      disruptionRate: 0.25,
       useRealisticDistributions: true,
       useSeasonalPatterns: true
     },
@@ -154,15 +154,15 @@ const SCENARIO_PRESETS: ScenarioPreset[] = [
     description: 'Maximum crew, high trip volume, many claims for AI system testing',
     icon: Zap,
     config: {
-      totalCrewMembers: 1000,
-      averageTripsPerMonth: 22,
+      totalCrewMembers: 50,
+      averageTripsPerMonth: 1,
       internationalRatio: 0.5,
-      claimFrequency: 8,
-      violationRate: 5,
-      disruptionRate: 12,
+      claimFrequency: 1,
+      violationRate: 0.25,
+      disruptionRate: 0.6,
       generateEdgeCases: true
     },
-    highlights: ['1000 crew members', 'High claim volume', 'Edge cases included']
+    highlights: ['50 crew members', 'High claim volume', 'Edge cases included']
   },
   {
     id: 'international_expansion',
@@ -170,10 +170,10 @@ const SCENARIO_PRESETS: ScenarioPreset[] = [
     description: 'Heavy international operations with premium claims',
     icon: Globe,
     config: {
-      totalCrewMembers: 750,
-      averageTripsPerMonth: 18,
+      totalCrewMembers: 38,
+      averageTripsPerMonth: 1,
       internationalRatio: 0.8,
-      claimFrequency: 6,
+      claimFrequency: 1,
       claimTypes: {
         internationalPremium: 40,
         perDiem: 30,
@@ -194,9 +194,9 @@ const SCENARIO_PRESETS: ScenarioPreset[] = [
     description: 'Peak holiday travel with overtime and holiday pay claims',
     icon: Calendar,
     config: {
-      totalCrewMembers: 600,
-      averageTripsPerMonth: 20,
-      claimFrequency: 7,
+      totalCrewMembers: 30,
+      averageTripsPerMonth: 1,
+      claimFrequency: 1,
       claimTypes: {
         internationalPremium: 25,
         perDiem: 20,
@@ -218,12 +218,12 @@ const SCENARIO_PRESETS: ScenarioPreset[] = [
     description: 'Increased violations and edge cases for compliance testing',
     icon: AlertTriangle,
     config: {
-      totalCrewMembers: 400,
-      averageTripsPerMonth: 16,
-      violationRate: 15,
-      disruptionRate: 20,
+      totalCrewMembers: 20,
+      averageTripsPerMonth: 1,
+      violationRate: 0.75,
+      disruptionRate: 1,
       generateEdgeCases: true,
-      claimFrequency: 5
+      claimFrequency: 1
     },
     highlights: ['High violation rate', 'Compliance edge cases', 'Contract boundary testing']
   },
@@ -233,9 +233,9 @@ const SCENARIO_PRESETS: ScenarioPreset[] = [
     description: 'Heavy training period with training pay claims',
     icon: Award,
     config: {
-      totalCrewMembers: 500,
-      averageTripsPerMonth: 12,
-      claimFrequency: 5,
+      totalCrewMembers: 25,
+      averageTripsPerMonth: 1,
+      claimFrequency: 1,
       claimTypes: {
         internationalPremium: 20,
         perDiem: 20,
@@ -256,9 +256,9 @@ const SCENARIO_PRESETS: ScenarioPreset[] = [
     description: 'Understaffed period with excessive overtime and deadheads',
     icon: Users,
     config: {
-      totalCrewMembers: 300,
-      averageTripsPerMonth: 25,
-      claimFrequency: 10,
+      totalCrewMembers: 15,
+      averageTripsPerMonth: 1,
+      claimFrequency: 1,
       claimTypes: {
         internationalPremium: 20,
         perDiem: 15,
@@ -279,9 +279,9 @@ const SCENARIO_PRESETS: ScenarioPreset[] = [
     description: 'Mix of boundary-testing claims and grievances',
     icon: Briefcase,
     config: {
-      totalCrewMembers: 550,
-      claimFrequency: 6,
-      violationRate: 8,
+      totalCrewMembers: 28,
+      claimFrequency: 1,
+      violationRate: 0.4,
       generateEdgeCases: true,
       claimTypes: {
         internationalPremium: 20,
@@ -300,16 +300,16 @@ const SCENARIO_PRESETS: ScenarioPreset[] = [
 ];
 
 const DEFAULT_CONFIG: DataGenerationConfig = {
-  totalCrewMembers: 500,
+  totalCrewMembers: 25,
   captains: 25,
   firstOfficers: 25,
   seniorFA: 25,
   juniorFA: 25,
-  yearsOfHistory: 10,
-  startDate: '2015-01-01',
-  averageTripsPerMonth: 15,
+  yearsOfHistory: 1,
+  startDate: '2024-01-01',
+  averageTripsPerMonth: 1,
   internationalRatio: 0.3,
-  claimFrequency: 4,
+  claimFrequency: 1,
   claimTypes: {
     internationalPremium: 25,
     perDiem: 25,
@@ -321,8 +321,8 @@ const DEFAULT_CONFIG: DataGenerationConfig = {
     deadhead: 4,
     other: 3
   },
-  violationRate: 2,
-  disruptionRate: 5,
+  violationRate: 0.1,
+  disruptionRate: 0.25,
   bases: ['PTY', 'GUA', 'MIA', 'MEX'],
   routes: ['PTY-GUA', 'PTY-MIA', 'PTY-MEX', 'GUA-MIA', 'MIA-MEX'],
   aircraftTypes: ['737-800', '737-MAX8', 'E190'],
