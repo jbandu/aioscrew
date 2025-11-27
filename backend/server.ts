@@ -17,6 +17,7 @@ import agentRoutes from './api/routes/agents.js';
 import adminRoutes from './api/routes/admin.js';
 import cbaRoutes from './api/cba-routes.js';
 import crewSchedulingRoutes from './api/routes/crew-scheduling.js';
+import testLabRoutes from './api/routes/test-lab.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -93,6 +94,7 @@ app.use('/api/agents', agentRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/cba', cbaRoutes);
 app.use('/api/crew-scheduling', crewSchedulingRoutes);
+app.use('/api/test-lab', testLabRoutes);
 
 // WebSocket connection handling
 io.on('connection', (socket) => {
