@@ -22,8 +22,18 @@ import {
   Info,
   X
 } from 'lucide-react';
-import { fleetScraperClient, AirlineStatus, ScrapeJob } from '../lib/fleet-scraper-client';
+import { fleetScraperClient, AirlineStatus, ScrapeJob, configureFleetScraperClient } from '../lib/fleet-scraper-client';
 import { io, Socket } from 'socket.io-client';
+
+// Get API URL from environment or use production backend
+const API_URL = import.meta.env.VITE_API_URL ||
+  (import.meta.env.DEV ? 'http://localhost:3001' : window.location.origin);
+
+const WS_URL = import.meta.env.VITE_WS_URL ||
+  (import.meta.env.DEV ? 'ws://localhost:3001' : window.location.origin.replace('http', 'ws'));
+
+// Configure the fleet scraper client with the correct URL
+configureFleetScraperClient(API_URL);
 
 interface ProgressEvent {
   airlineCode: string;
@@ -48,7 +58,7 @@ export default function FleetDataManagementCard() {
     try {
       setRefreshing(true);
       console.log('[FleetDataManagement] Starting data load...');
-      console.log('[FleetDataManagement] Fetching from: http://localhost:3001/api/v1/airlines/status');
+      console.log('[FleetDataManagement] Fetching from:', API_URL + '/api/v1/airlines/status');
 
       const [airlineData, jobsData] = await Promise.all([
         fleetScraperClient.getAllAirlineStatuses(),
@@ -86,7 +96,7 @@ export default function FleetDataManagementCard() {
 
   // Set up WebSocket connection for real-time progress updates
   useEffect(() => {
-    const socketInstance = io('http://localhost:3001', {
+    const socketInstance = io(API_URL, {
       transports: ['websocket'],
       reconnection: true
     });

@@ -1,0 +1,6 @@
+# Railway Project: AI OS Crew
+# Backend URL: https://aioscrew-backend-production.up.railway.app
+# 
+# To link this project manually, run:
+# railway link
+# Then select "AI OS Crew"
