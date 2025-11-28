@@ -65,7 +65,7 @@ export default function FleetDataManagementCard() {
     try {
       setRefreshing(true);
       console.log('[FleetDataManagement] Starting data load...');
-      console.log('[FleetDataManagement] Fetching from:', API_URL + '/api/v1/airlines/status');
+      console.log('[FleetDataManagement] Fetching from:', AIRCRAFT_API_URL + '/api/v1/airlines/status');
 
       const [airlineData, jobsData] = await Promise.all([
         fleetScraperClient.getAllAirlineStatuses(),

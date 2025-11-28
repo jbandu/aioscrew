@@ -223,7 +223,7 @@ export class FleetScraperClient {
       'Content-Type': 'application/json',
     };
     if (this.apiKey) {
-      headers['Authorization'] = `Bearer ${this.apiKey}`;
+      headers['X-API-Key'] = this.apiKey;
     }
     return headers;
   }
@@ -716,7 +716,10 @@ export const fleetScraperClient = new FleetScraperClient();
  * Configure the default client
  */
 export function configureFleetScraperClient(baseUrl: string, apiKey?: string) {
-  Object.assign(fleetScraperClient, new FleetScraperClient(baseUrl, apiKey));
+  // @ts-ignore - Access private fields to properly configure singleton
+  fleetScraperClient.baseUrl = baseUrl.replace(/\/$/, '');
+  // @ts-ignore - Access private fields to properly configure singleton
+  fleetScraperClient.apiKey = apiKey;
 }
 
 // ============================================================================
