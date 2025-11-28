@@ -67,10 +67,16 @@ export default function FleetDataManagementCard() {
       console.log('[FleetDataManagement] Starting data load...');
       console.log('[FleetDataManagement] Fetching from:', AIRCRAFT_API_URL + '/api/v1/airlines/status');
 
-      const [airlineData, jobsData] = await Promise.all([
-        fleetScraperClient.getAllAirlineStatuses(),
-        fleetScraperClient.getActiveJobs()
-      ]);
+      // Fetch airline data (critical)
+      const airlineData = await fleetScraperClient.getAllAirlineStatuses();
+
+      // Try to fetch jobs data (optional - may not exist on all servers)
+      let jobsData: any[] = [];
+      try {
+        jobsData = await fleetScraperClient.getActiveJobs();
+      } catch (jobsErr) {
+        console.warn('[FleetDataManagement] Jobs endpoint not available:', jobsErr);
+      }
 
       console.log('[FleetDataManagement] Data loaded successfully:', {
         airlines: airlineData.length,
