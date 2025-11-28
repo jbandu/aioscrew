@@ -291,9 +291,68 @@ router.post('/scraping/jobs', async (req, res) => {
       timestamp: new Date().toISOString()
     });
 
-    // TODO: Trigger actual scraping via MCP server
-    // This would call the MCP Aircraft Database Server to start the scraping process
-    logger.info(`TODO: Trigger MCP scraping for job ${jobId}`);
+    // Trigger actual scraping via MCP server
+    const mcpUrl = process.env.AIRCRAFT_API_URL || 'https://aircraft-database-mcp-production.up.railway.app';
+    const mcpApiKey = process.env.AIRCRAFT_API_KEY || 'prod_3b0c2496dfb58aab0c1f534f92ce88e4ef74213cdf63cf046fbc2a0bf7fc2f5f';
+
+    try {
+      logger.info(`Triggering MCP scraping for job ${jobId}, airline: ${airlineCode.toUpperCase()}, jobType: ${jobType}`);
+
+      const response = await fetch(`${mcpUrl}/api/v1/jobs`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': mcpApiKey,
+        },
+        body: JSON.stringify({
+          airline_code: airlineCode.toUpperCase(),
+          job_type: jobType,
+          priority: priority || 'normal',
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        logger.error(`MCP server returned ${response.status}`, { errorText });
+        throw new Error(`MCP server returned ${response.status}: ${errorText}`);
+      }
+
+      const mcpJob = await response.json();
+      logger.info(`MCP scraping job created successfully`, {
+        mcpJobId: mcpJob.job_id,
+        localJobId: jobId,
+        airline: airlineCode.toUpperCase()
+      });
+
+      // Emit success event
+      io.emit('scraping:progress', {
+        airlineCode: airlineCode.toUpperCase(),
+        jobId,
+        phase: 'mcp_job_created',
+        message: `MCP scraping job ${mcpJob.job_id} created successfully`,
+        progress: 10,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      logger.error('Failed to trigger MCP scraping', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        jobId,
+        airline: airlineCode.toUpperCase()
+      });
+
+      // Emit error but don't fail the whole request
+      io.emit('scraping:progress', {
+        airlineCode: airlineCode.toUpperCase(),
+        jobId,
+        phase: 'mcp_job_error',
+        message: `Warning: Could not trigger MCP scraping: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        progress: 5,
+        timestamp: new Date().toISOString()
+      });
+
+      // Continue with local job creation even if MCP call fails
+      logger.warn(`Continuing with local job creation despite MCP error`);
+    }
 
     // Simulate job start by updating status
     const createdJobId = result.rows[0].id;
