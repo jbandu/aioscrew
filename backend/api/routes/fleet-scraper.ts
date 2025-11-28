@@ -317,7 +317,7 @@ router.post('/scraping/jobs', async (req, res) => {
         throw new Error(`MCP server returned ${response.status}: ${errorText}`);
       }
 
-      const mcpJob = await response.json();
+      const mcpJob = await response.json() as { job_id: string; airline_code: string; status: string };
       logger.info(`MCP scraping job created successfully`, {
         mcpJobId: mcpJob.job_id,
         localJobId: jobId,
