@@ -13,7 +13,9 @@
     ],
     "buildArgs": {
       "VITE_DATABASE_URL": "${{DATABASE_URL}}",
-      "VITE_API_URL": "https://${{RAILWAY_PUBLIC_DOMAIN}}"
+      "VITE_API_URL": "https://${{RAILWAY_PUBLIC_DOMAIN}}",
+      "VITE_AIRCRAFT_API_URL": "https://aircraft-database-mcp-production.up.railway.app",
+      "VITE_AIRCRAFT_API_KEY": "prod_3b0c2496dfb58aab0c1f534f92ce88e4ef74213cdf63cf046fbc2a0bf7fc2f5f"
     }
   },
   "deploy": {

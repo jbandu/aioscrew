@@ -26,6 +26,8 @@ WORKDIR /app/frontend
 # Accept build arguments for Vite environment variables
 ARG VITE_DATABASE_URL
 ARG VITE_API_URL
+ARG VITE_AIRCRAFT_API_URL
+ARG VITE_AIRCRAFT_API_KEY
 
 # Copy frontend package files (from root) - do this first for better caching
 COPY package*.json ./
@@ -50,6 +52,8 @@ COPY index.html ./
 # Build frontend with environment variables
 ENV VITE_DATABASE_URL=$VITE_DATABASE_URL
 ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_AIRCRAFT_API_URL=$VITE_AIRCRAFT_API_URL
+ENV VITE_AIRCRAFT_API_KEY=$VITE_AIRCRAFT_API_KEY
 # Use vite build directly to avoid running build:backend script from package.json
 RUN npx vite build
 
