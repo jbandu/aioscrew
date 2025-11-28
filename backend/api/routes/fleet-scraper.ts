@@ -296,9 +296,10 @@ router.post('/scraping/jobs', async (req, res) => {
     logger.info(`TODO: Trigger MCP scraping for job ${jobId}`);
 
     // Simulate job start by updating status
+    const createdJobId = result.rows[0].id;
     await pool.query(
-      `UPDATE scraping_jobs SET status = 'running', started_at = NOW() WHERE job_id = $1`,
-      [jobId]
+      `UPDATE scrape_jobs SET status = 'running', started_at = NOW() WHERE id = $1`,
+      [createdJobId]
     );
 
     res.status(201).json(result.rows[0]);
