@@ -198,7 +198,7 @@ router.post('/scraping/jobs', async (req, res) => {
 
     // Validate airline exists
     const airlineCheck = await pool.query(
-      'SELECT airline_code, airline_name FROM airline_data_status WHERE airline_code = $1',
+      'SELECT iata_code, name FROM airlines WHERE iata_code = $1',
       [airlineCode.toUpperCase()]
     );
 
@@ -218,7 +218,7 @@ router.post('/scraping/jobs', async (req, res) => {
       airlineCode: airlineCode.toUpperCase(),
       jobId,
       phase: 'validated',
-      message: `Airline validated: ${airline.airline_name}`,
+      message: `Airline validated: ${airline.name}`,
       progress: 10,
       timestamp: new Date().toISOString()
     });
