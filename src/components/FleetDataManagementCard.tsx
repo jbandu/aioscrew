@@ -25,15 +25,21 @@ import {
 import { fleetScraperClient, AirlineStatus, ScrapeJob, configureFleetScraperClient } from '../lib/fleet-scraper-client';
 import { io, Socket } from 'socket.io-client';
 
-// Get API URL from environment or use production backend
+// Get main API URL from environment or use production backend
 const API_URL = import.meta.env.VITE_API_URL ||
   (import.meta.env.DEV ? 'http://localhost:3001' : window.location.origin);
 
 const WS_URL = import.meta.env.VITE_WS_URL ||
   (import.meta.env.DEV ? 'ws://localhost:3001' : window.location.origin.replace('http', 'ws'));
 
-// Configure the fleet scraper client with the correct URL
-configureFleetScraperClient(API_URL);
+// Fleet/Aircraft API Configuration (separate service)
+const AIRCRAFT_API_URL = import.meta.env.VITE_AIRCRAFT_API_URL ||
+  (import.meta.env.DEV ? 'http://localhost:3000' : 'https://aircraft-database-mcp-production.up.railway.app');
+
+const AIRCRAFT_API_KEY = import.meta.env.VITE_AIRCRAFT_API_KEY || 'dev_key_12345';
+
+// Configure the fleet scraper client with the aircraft API URL and key
+configureFleetScraperClient(AIRCRAFT_API_URL, AIRCRAFT_API_KEY);
 
 interface ProgressEvent {
   airlineCode: string;
