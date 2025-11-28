@@ -4,11 +4,11 @@ import { Pool } from 'pg';
 const router = express.Router();
 
 // Connect to the aircraft database
+// Use environment variable for Railway, fallback to localhost for development
 const aircraftPool = new Pool({
-  host: 'localhost',
-  port: 5432,
-  database: 'aircraft_db',
-  user: 'srihaanbandu',
+  connectionString: process.env.AIRCRAFT_DATABASE_URL ||
+    'postgresql://srihaanbandu@localhost:5432/aircraft_db',
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
 });
 
 /**
