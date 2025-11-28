@@ -24,9 +24,10 @@ import { io } from '../../server.js';
 const router = express.Router();
 
 // Database connection for fleet backup schema
-// Uses environment DATABASE_URL (Railway/prod) or falls back to localhost (dev)
+// Uses AIRCRAFT_DATABASE_URL for the separate aircraft/fleet database
+// Falls back to DATABASE_URL for local dev compatibility
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgresql://srihaanbandu@localhost:5432/aircraft_db',
+  connectionString: process.env.AIRCRAFT_DATABASE_URL || process.env.DATABASE_URL || 'postgresql://srihaanbandu@localhost:5432/aircraft_db',
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 });
 
