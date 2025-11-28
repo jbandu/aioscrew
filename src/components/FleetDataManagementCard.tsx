@@ -197,18 +197,30 @@ export default function FleetDataManagementCard() {
   // Trigger update for an airline
   const handleTriggerUpdate = async (airlineCode: string) => {
     try {
-      await fleetScraperClient.createScrapingJob({
-        airlineCode,
-        jobType: 'quick_update',
-        priority: 'normal',
-        backupBeforeUpdate: true,
-        notifyOnComplete: false
+      const response = await fetch(`${API_URL}/api/v1/scraping/jobs`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          airlineCode,
+          jobType: 'quick_update',
+          priority: 'normal',
+          backupBeforeUpdate: true,
+          notifyOnComplete: false
+        })
       });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to create job');
+      }
+
       // Reload data to show new job
       loadData();
     } catch (err) {
       console.error('Error triggering update:', err);
-      alert('Failed to start scraping job');
+      alert(`Failed to start scraping job: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }
   };
 
