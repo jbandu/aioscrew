@@ -3,10 +3,14 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { neon } from '@neondatabase/serverless';
+import pkg from 'pg';
+const { Pool } = pkg;
 
 const router = Router();
-const sql = neon(process.env.DATABASE_URL!);
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+});
 
 // ============================================================================
 // CLAIMS REVIEW ENDPOINTS
@@ -20,66 +24,74 @@ router.get('/claims/metrics', async (req: Request, res: Response) => {
   try {
     const { start_date, end_date } = req.query;
 
-    let dateFilter = '';
-    const params: any[] = [];
-    
-    if (start_date && end_date) {
-      dateFilter = 'WHERE claim_date >= $1 AND claim_date <= $2';
-      params.push(start_date, end_date);
-    }
-
     // Total pending
-    const pendingResult = await sql`
+    let pendingQuery = `
       SELECT COUNT(*) as count, COALESCE(SUM(amount), 0) as total_amount
       FROM pay_claims
       WHERE COALESCE(status, 'pending') IN ('pending', 'needs-review', 'manual_review')
-      ${start_date && end_date ? sql`AND claim_date >= ${start_date} AND claim_date <= ${end_date}` : sql``}
     `;
+    const pendingParams: any[] = [];
+    if (start_date && end_date) {
+      pendingParams.push(start_date, end_date);
+      pendingQuery += ` AND claim_date >= $1 AND claim_date <= $2`;
+    }
+    const pendingResult = await pool.query(pendingQuery, pendingParams);
 
     // Auto-approved today
     const today = new Date().toISOString().split('T')[0];
-    const autoApprovedResult = await sql`
-      SELECT COUNT(*) as count
+    const autoApprovedResult = await pool.query(
+      `SELECT COUNT(*) as count
       FROM pay_claims
       WHERE (status = 'auto_approved' OR status = 'ai-validated')
-      AND DATE(claim_date) = ${today}
-    `;
+      AND DATE(claim_date) = $1`,
+      [today]
+    );
 
     // Manual review count
-    const manualReviewResult = await sql`
-      SELECT COUNT(*) as count
+    const manualReviewResult = await pool.query(
+      `SELECT COUNT(*) as count
       FROM pay_claims
-      WHERE status IN ('manual_review', 'needs-review')
-    `;
+      WHERE status IN ('manual_review', 'needs-review')`
+    );
 
     // Average resolution time
-    const avgResolutionResult = await sql`
+    let avgResolutionQuery = `
       SELECT AVG(resolution_time_hours) as avg_hours
       FROM pay_claims
       WHERE resolution_time_hours IS NOT NULL
-      ${start_date && end_date ? sql`AND claim_date >= ${start_date} AND claim_date <= ${end_date}` : sql``}
     `;
+    const avgResolutionParams: any[] = [];
+    if (start_date && end_date) {
+      avgResolutionParams.push(start_date, end_date);
+      avgResolutionQuery += ` AND claim_date >= $1 AND claim_date <= $2`;
+    }
+    const avgResolutionResult = await pool.query(avgResolutionQuery, avgResolutionParams);
 
     // Auto-approval rate
-    const approvalRateResult = await sql`
-      SELECT 
+    let approvalRateQuery = `
+      SELECT
         COUNT(*) as total,
         COUNT(CASE WHEN status IN ('auto_approved', 'ai-validated') THEN 1 END) as auto_approved
       FROM pay_claims
       WHERE status IS NOT NULL
-      ${start_date && end_date ? sql`AND claim_date >= ${start_date} AND claim_date <= ${end_date}` : sql``}
     `;
+    const approvalRateParams: any[] = [];
+    if (start_date && end_date) {
+      approvalRateParams.push(start_date, end_date);
+      approvalRateQuery += ` AND claim_date >= $1 AND claim_date <= $2`;
+    }
+    const approvalRateResult = await pool.query(approvalRateQuery, approvalRateParams);
 
-    const total = Number(approvalRateResult[0]?.total || 0);
-    const autoApproved = Number(approvalRateResult[0]?.auto_approved || 0);
+    const total = Number(approvalRateResult.rows[0]?.total || 0);
+    const autoApproved = Number(approvalRateResult.rows[0]?.auto_approved || 0);
     const autoApprovalRate = total > 0 ? autoApproved / total : 0;
 
     res.json({
-      total_pending: Number(pendingResult[0]?.count || 0),
-      total_amount_pending: Number(pendingResult[0]?.total_amount || 0),
-      auto_approved_today: Number(autoApprovedResult[0]?.count || 0),
-      manual_review_count: Number(manualReviewResult[0]?.count || 0),
-      avg_resolution_hours: Number(avgResolutionResult[0]?.avg_hours || 0),
+      total_pending: Number(pendingResult.rows[0]?.count || 0),
+      total_amount_pending: Number(pendingResult.rows[0]?.total_amount || 0),
+      auto_approved_today: Number(autoApprovedResult.rows[0]?.count || 0),
+      manual_review_count: Number(manualReviewResult.rows[0]?.count || 0),
+      avg_resolution_hours: Number(avgResolutionResult.rows[0]?.avg_hours || 0),
       auto_approval_rate: autoApprovalRate
     });
   } catch (error) {
@@ -107,10 +119,8 @@ router.get('/claims/list', async (req: Request, res: Response) => {
     const limitNum = parseInt(limit as string, 10);
     const offsetNum = parseInt(offset as string, 10);
 
-    // Build base query - Neon doesn't support dynamic WHERE clauses easily, so we'll filter in memory if needed
-    // For now, fetch all and filter client-side (not ideal but works)
-    const allClaims = await sql`
-      SELECT 
+    let queryText = `
+      SELECT
         pc.id as claim_id,
         pc.crew_id as crew_member_id,
         cm.name as crew_name,
@@ -126,34 +136,38 @@ router.get('/claims/list', async (req: Request, res: Response) => {
         pc.ai_recommendation
       FROM pay_claims pc
       LEFT JOIN crew_members cm ON pc.crew_id = cm.id
-      ORDER BY pc.claim_date DESC
-      LIMIT ${limitNum + 100} OFFSET ${offsetNum}
+      WHERE 1=1
     `;
+    const params: any[] = [];
 
-    // Filter in memory
-    let claims = allClaims;
     if (status) {
-      claims = claims.filter((c: any) => (c.status || 'pending') === status);
+      params.push(status);
+      queryText += ` AND COALESCE(pc.status, 'pending') = $${params.length}`;
     }
     if (priority) {
-      claims = claims.filter((c: any) => (c.priority || 'normal') === priority);
+      params.push(priority);
+      queryText += ` AND COALESCE(pc.priority, 'normal') = $${params.length}`;
     }
     if (claim_type) {
-      claims = claims.filter((c: any) => c.claim_type === claim_type);
+      params.push(claim_type);
+      queryText += ` AND pc.claim_type = $${params.length}`;
     }
     if (start_date) {
-      const start = new Date(start_date as string);
-      claims = claims.filter((c: any) => new Date(c.submitted_at) >= start);
+      params.push(start_date);
+      queryText += ` AND pc.claim_date >= $${params.length}`;
     }
     if (end_date) {
-      const end = new Date(end_date as string);
-      claims = claims.filter((c: any) => new Date(c.submitted_at) <= end);
+      params.push(end_date);
+      queryText += ` AND pc.claim_date <= $${params.length}`;
     }
 
-    // Apply limit after filtering
-    claims = claims.slice(0, limitNum);
+    queryText += ` ORDER BY pc.claim_date DESC`;
+    params.push(limitNum, offsetNum);
+    queryText += ` LIMIT $${params.length - 1} OFFSET $${params.length}`;
 
-    res.json(claims.map((row: any) => ({
+    const allClaims = await pool.query(queryText, params);
+
+    res.json(allClaims.rows.map((row: any) => ({
       claim_id: row.claim_id,
       crew_member_id: row.crew_member_id,
       crew_name: row.crew_name || 'Unknown',
@@ -183,44 +197,48 @@ router.get('/claims/:claimId', async (req: Request, res: Response) => {
     const { claimId } = req.params;
 
     // Get claim details
-    const claimResult = await sql`
-      SELECT 
+    const claimResult = await pool.query(
+      `SELECT
         pc.*,
         cm.name as crew_name
       FROM pay_claims pc
       LEFT JOIN crew_members cm ON pc.crew_id = cm.id
-      WHERE pc.id = ${claimId}
-    `;
+      WHERE pc.id = $1`,
+      [claimId]
+    );
 
-    if (claimResult.length === 0) {
+    if (claimResult.rows.length === 0) {
       return res.status(404).json({ error: 'Claim not found' });
     }
 
-    const claim = claimResult[0];
+    const claim = claimResult.rows[0];
 
     // Get agent activities
-    const activities = await sql`
-      SELECT *
+    const activities = await pool.query(
+      `SELECT *
       FROM agent_activity_log
-      WHERE claim_id = ${claimId}
-      ORDER BY created_at ASC
-    `;
+      WHERE claim_id = $1
+      ORDER BY created_at ASC`,
+      [claimId]
+    );
 
     // Get evidence
-    const evidence = await sql`
-      SELECT *
+    const evidence = await pool.query(
+      `SELECT *
       FROM claim_evidence
-      WHERE claim_id = ${claimId}
-      ORDER BY created_at ASC
-    `;
+      WHERE claim_id = $1
+      ORDER BY created_at ASC`,
+      [claimId]
+    );
 
     // Get admin actions
-    const adminActions = await sql`
-      SELECT *
+    const adminActions = await pool.query(
+      `SELECT *
       FROM admin_actions
-      WHERE claim_id = ${claimId}
-      ORDER BY created_at ASC
-    `;
+      WHERE claim_id = $1
+      ORDER BY created_at ASC`,
+      [claimId]
+    );
 
     res.json({
       claim: {
@@ -240,7 +258,7 @@ router.get('/claims/:claimId', async (req: Request, res: Response) => {
         ai_reasoning: claim.ai_reasoning,
         contract_references: claim.contract_references || []
       },
-      agent_activities: activities.map((a: any) => ({
+      agent_activities: activities.rows.map((a: any) => ({
         activity_id: a.activity_id,
         agent_name: a.agent_name,
         activity_type: a.activity_type,
@@ -251,7 +269,7 @@ router.get('/claims/:claimId', async (req: Request, res: Response) => {
         error_message: a.error_message,
         created_at: a.created_at
       })),
-      evidence: evidence.map((e: any) => ({
+      evidence: evidence.rows.map((e: any) => ({
         evidence_id: e.evidence_id,
         evidence_type: e.evidence_type,
         source: e.source,
@@ -259,7 +277,7 @@ router.get('/claims/:claimId', async (req: Request, res: Response) => {
         verified: e.verified,
         created_at: e.created_at
       })),
-      admin_actions: adminActions.map((a: any) => ({
+      admin_actions: adminActions.rows.map((a: any) => ({
         action_id: a.action_id,
         action_type: a.action_type,
         reason: a.reason,
@@ -288,10 +306,11 @@ router.post('/claims/:claimId/action', async (req: Request, res: Response) => {
     }
 
     // Record admin action
-    await sql`
-      INSERT INTO admin_actions (claim_id, admin_id, action_type, reason, override_amount)
-      VALUES (${claimId}, ${admin_id}, ${action_type}, ${reason || null}, ${override_amount || null})
-    `;
+    await pool.query(
+      `INSERT INTO admin_actions (claim_id, admin_id, action_type, reason, override_amount)
+      VALUES ($1, $2, $3, $4, $5)`,
+      [claimId, admin_id, action_type, reason || null, override_amount || null]
+    );
 
     // Update claim status
     let newStatus = 'pending';
@@ -308,31 +327,34 @@ router.post('/claims/:claimId/action', async (req: Request, res: Response) => {
     }
 
     if (amountApproved !== null) {
-      await sql`
-        UPDATE pay_claims
-        SET 
-          status = ${newStatus},
-          amount_approved = ${amountApproved},
+      await pool.query(
+        `UPDATE pay_claims
+        SET
+          status = $1,
+          amount_approved = $2,
           reviewed_at = NOW(),
-          reviewed_by = ${admin_id}
-        WHERE id = ${claimId}
-      `;
+          reviewed_by = $3
+        WHERE id = $4`,
+        [newStatus, amountApproved, admin_id, claimId]
+      );
     } else {
-      await sql`
-        UPDATE pay_claims
-        SET 
-          status = ${newStatus},
+      await pool.query(
+        `UPDATE pay_claims
+        SET
+          status = $1,
           reviewed_at = NOW(),
-          reviewed_by = ${admin_id}
-        WHERE id = ${claimId}
-      `;
+          reviewed_by = $2
+        WHERE id = $3`,
+        [newStatus, admin_id, claimId]
+      );
     }
 
     // Log to audit trail
-    await sql`
-      INSERT INTO audit_log (entity_type, entity_id, action, performed_by, changes)
-      VALUES ('claim', ${claimId}, ${action_type}, ${admin_id}, ${JSON.stringify({ reason, override_amount })}::jsonb)
-    `;
+    await pool.query(
+      `INSERT INTO audit_log (entity_type, entity_id, action, performed_by, changes)
+      VALUES ($1, $2, $3, $4, $5)`,
+      ['claim', claimId, action_type, admin_id, JSON.stringify({ reason, override_amount })]
+    );
 
     res.json({ success: true, message: `Claim ${action_type} successfully` });
   } catch (error) {
@@ -351,8 +373,8 @@ router.post('/claims/:claimId/action', async (req: Request, res: Response) => {
  */
 router.get('/payments/pending', async (req: Request, res: Response) => {
   try {
-    const pending = await sql`
-      SELECT 
+    const pending = await pool.query(
+      `SELECT
         pc.id as claim_id,
         pc.crew_id as crew_member_id,
         cm.name as crew_name,
@@ -365,10 +387,10 @@ router.get('/payments/pending', async (req: Request, res: Response) => {
       AND NOT EXISTS (
         SELECT 1 FROM payment_items pi WHERE pi.claim_id = pc.id
       )
-      ORDER BY pc.reviewed_at DESC
-    `;
+      ORDER BY pc.reviewed_at DESC`
+    );
 
-    res.json(pending.map((p: any) => ({
+    res.json(pending.rows.map((p: any) => ({
       claim_id: p.claim_id,
       crew_member_id: p.crew_member_id,
       crew_name: p.crew_name || 'Unknown',
@@ -395,43 +417,46 @@ router.post('/payments/batch', async (req: Request, res: Response) => {
     }
 
     // Calculate total amount
-    const claimsResult = await sql`
-      SELECT 
+    const claimsResult = await pool.query(
+      `SELECT
         id,
         crew_id,
         COALESCE(amount_approved, amount) as amount
       FROM pay_claims
-      WHERE id = ANY(${claim_ids})
-      AND status IN ('approved', 'auto_approved', 'ai-validated')
-    `;
+      WHERE id = ANY($1)
+      AND status IN ('approved', 'auto_approved', 'ai-validated')`,
+      [claim_ids]
+    );
 
-    if (claimsResult.length === 0) {
+    if (claimsResult.rows.length === 0) {
       return res.status(400).json({ error: 'No valid claims found' });
     }
 
-    const totalAmount = claimsResult.reduce((sum: number, c: any) => sum + Number(c.amount || 0), 0);
+    const totalAmount = claimsResult.rows.reduce((sum: number, c: any) => sum + Number(c.amount || 0), 0);
 
     // Generate batch ID
     const batchId = `BATCH-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`;
 
     // Create batch
-    await sql`
-      INSERT INTO payment_batches (batch_id, batch_date, total_amount, total_claims, status, processed_by)
-      VALUES (${batchId}, CURRENT_DATE, ${totalAmount}, ${claimsResult.length}, 'pending', ${admin_id})
-    `;
+    await pool.query(
+      `INSERT INTO payment_batches (batch_id, batch_date, total_amount, total_claims, status, processed_by)
+      VALUES ($1, CURRENT_DATE, $2, $3, $4, $5)`,
+      [batchId, totalAmount, claimsResult.rows.length, 'pending', admin_id]
+    );
 
     // Create payment items
-    for (const claim of claimsResult) {
-      await sql`
-        INSERT INTO payment_items (batch_id, claim_id, crew_member_id, amount, status)
-        VALUES (${batchId}, ${claim.id}, ${claim.crew_id}, ${claim.amount}, 'pending')
-      `;
+    for (const claim of claimsResult.rows) {
+      await pool.query(
+        `INSERT INTO payment_items (batch_id, claim_id, crew_member_id, amount, status)
+        VALUES ($1, $2, $3, $4, $5)`,
+        [batchId, claim.id, claim.crew_id, claim.amount, 'pending']
+      );
     }
 
     res.json({
       batch_id: batchId,
       total_amount: totalAmount,
-      total_claims: claimsResult.length,
+      total_claims: claimsResult.rows.length,
       status: 'pending'
     });
   } catch (error) {
@@ -448,66 +473,31 @@ router.get('/payments/batches', async (req: Request, res: Response) => {
   try {
     const { status, start_date, end_date } = req.query;
 
-    // Build query conditionally using Neon's template literal syntax
-    let batches;
-    if (status && start_date && end_date) {
-      batches = await sql`
-        SELECT *
-        FROM payment_batches
-        WHERE status = ${status} AND batch_date >= ${start_date} AND batch_date <= ${end_date}
-        ORDER BY batch_date DESC, created_at DESC
-      `;
-    } else if (status && start_date) {
-      batches = await sql`
-        SELECT *
-        FROM payment_batches
-        WHERE status = ${status} AND batch_date >= ${start_date}
-        ORDER BY batch_date DESC, created_at DESC
-      `;
-    } else if (status && end_date) {
-      batches = await sql`
-        SELECT *
-        FROM payment_batches
-        WHERE status = ${status} AND batch_date <= ${end_date}
-        ORDER BY batch_date DESC, created_at DESC
-      `;
-    } else if (start_date && end_date) {
-      batches = await sql`
-        SELECT *
-        FROM payment_batches
-        WHERE batch_date >= ${start_date} AND batch_date <= ${end_date}
-        ORDER BY batch_date DESC, created_at DESC
-      `;
-    } else if (status) {
-      batches = await sql`
-        SELECT *
-        FROM payment_batches
-        WHERE status = ${status}
-        ORDER BY batch_date DESC, created_at DESC
-      `;
-    } else if (start_date) {
-      batches = await sql`
-        SELECT *
-        FROM payment_batches
-        WHERE batch_date >= ${start_date}
-        ORDER BY batch_date DESC, created_at DESC
-      `;
-    } else if (end_date) {
-      batches = await sql`
-        SELECT *
-        FROM payment_batches
-        WHERE batch_date <= ${end_date}
-        ORDER BY batch_date DESC, created_at DESC
-      `;
-    } else {
-      batches = await sql`
-        SELECT *
-        FROM payment_batches
-        ORDER BY batch_date DESC, created_at DESC
-      `;
+    let queryText = `
+      SELECT *
+      FROM payment_batches
+      WHERE 1=1
+    `;
+    const params: any[] = [];
+
+    if (status) {
+      params.push(status);
+      queryText += ` AND status = $${params.length}`;
+    }
+    if (start_date) {
+      params.push(start_date);
+      queryText += ` AND batch_date >= $${params.length}`;
+    }
+    if (end_date) {
+      params.push(end_date);
+      queryText += ` AND batch_date <= $${params.length}`;
     }
 
-    res.json(batches.map((b: any) => ({
+    queryText += ` ORDER BY batch_date DESC, created_at DESC`;
+
+    const batches = await pool.query(queryText, params);
+
+    res.json(batches.rows.map((b: any) => ({
       batch_id: b.batch_id,
       batch_date: b.batch_date,
       total_amount: Number(b.total_amount || 0),
@@ -540,14 +530,15 @@ router.get('/reports/claims-analytics', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'start_date and end_date are required' });
     }
 
-    const analytics = await sql`
-      SELECT *
+    const analytics = await pool.query(
+      `SELECT *
       FROM claims_analytics
-      WHERE claim_date >= ${start_date} AND claim_date <= ${end_date}
-      ORDER BY claim_date ASC
-    `;
+      WHERE claim_date >= $1 AND claim_date <= $2
+      ORDER BY claim_date ASC`,
+      [start_date, end_date]
+    );
 
-    res.json(analytics.map((a: any) => ({
+    res.json(analytics.rows.map((a: any) => ({
       claim_date: a.claim_date,
       claim_type: a.claim_type,
       status: a.status,
@@ -573,19 +564,23 @@ router.get('/reports/agent-performance', async (req: Request, res: Response) => 
   try {
     const { start_date, end_date } = req.query;
 
-    let whereClause = '';
-    if (start_date && end_date) {
-      whereClause = `WHERE activity_date >= '${start_date}' AND activity_date <= '${end_date}'`;
-    }
-
-    const performance = await sql`
+    let queryText = `
       SELECT *
       FROM agent_performance
-      ${start_date && end_date ? sql`WHERE activity_date >= ${start_date} AND activity_date <= ${end_date}` : sql``}
-      ORDER BY activity_date DESC, agent_name ASC
+      WHERE 1=1
     `;
+    const params: any[] = [];
 
-    res.json(performance.map((p: any) => ({
+    if (start_date && end_date) {
+      params.push(start_date, end_date);
+      queryText += ` AND activity_date >= $1 AND activity_date <= $2`;
+    }
+
+    queryText += ` ORDER BY activity_date DESC, agent_name ASC`;
+
+    const performance = await pool.query(queryText, params);
+
+    res.json(performance.rows.map((p: any) => ({
       agent_name: p.agent_name,
       activity_date: p.activity_date,
       activities_count: Number(p.activities_count || 0),
@@ -612,14 +607,15 @@ router.get('/reports/financial-impact', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'start_date and end_date are required' });
     }
 
-    const impact = await sql`
-      SELECT *
+    const impact = await pool.query(
+      `SELECT *
       FROM financial_impact
-      WHERE report_date >= ${start_date} AND report_date <= ${end_date}
-      ORDER BY report_date ASC
-    `;
+      WHERE report_date >= $1 AND report_date <= $2
+      ORDER BY report_date ASC`,
+      [start_date, end_date]
+    );
 
-    res.json(impact.map((i: any) => ({
+    res.json(impact.rows.map((i: any) => ({
       report_date: i.report_date,
       total_claimed: Number(i.total_claimed || 0),
       total_approved: Number(i.total_approved || 0),
@@ -676,30 +672,31 @@ router.post('/excess-payments/scan', async (req: Request, res: Response) => {
       // Save findings to database
       if (result.data?.findings) {
         for (const finding of result.data.findings) {
-          const findingResult = await sql`
-            INSERT INTO excess_payment_findings (
+          const findingResult = await pool.query(
+            `INSERT INTO excess_payment_findings (
               claim_id, finding_type, severity, title, description,
               excess_amount, expected_amount, paid_amount, evidence,
               contract_references, suggested_action, agent_confidence, status
             )
-            VALUES (
-              ${claim_id},
-              ${finding.type},
-              ${finding.severity},
-              ${finding.title},
-              ${finding.description},
-              ${finding.excessAmount},
-              ${finding.expectedAmount},
-              ${finding.paidAmount},
-              ${JSON.stringify(finding.evidence)}::jsonb,
-              ${finding.contractReferences || []},
-              ${finding.suggestedAction},
-              ${result.confidence || 0.5},
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+            RETURNING *`,
+            [
+              claim_id,
+              finding.type,
+              finding.severity,
+              finding.title,
+              finding.description,
+              finding.excessAmount,
+              finding.expectedAmount,
+              finding.paidAmount,
+              JSON.stringify(finding.evidence),
+              finding.contractReferences || [],
+              finding.suggestedAction,
+              result.confidence || 0.5,
               'pending'
-            )
-            RETURNING *
-          `;
-          findings.push(findingResult[0]);
+            ]
+          );
+          findings.push(findingResult.rows[0]);
         }
       }
 
@@ -725,14 +722,15 @@ router.post('/excess-payments/scan', async (req: Request, res: Response) => {
       });
     } else if (batch_id) {
       // Scan entire batch
-      const batchClaims = await sql`
-        SELECT DISTINCT pi.claim_id
+      const batchClaims = await pool.query(
+        `SELECT DISTINCT pi.claim_id
         FROM payment_items pi
-        WHERE pi.batch_id = ${batch_id}
-      `;
+        WHERE pi.batch_id = $1`,
+        [batch_id]
+      );
 
       const allFindings: any[] = [];
-      for (const row of batchClaims) {
+      for (const row of batchClaims.rows) {
         const claim = await getClaimById(row.claim_id);
         if (!claim) continue;
 
@@ -749,44 +747,46 @@ router.post('/excess-payments/scan', async (req: Request, res: Response) => {
 
         if (result.data?.findings) {
           for (const finding of result.data.findings) {
-            const paymentItem = await sql`
-              SELECT payment_id FROM payment_items
-              WHERE claim_id = ${claim.id} AND batch_id = ${batch_id}
-              LIMIT 1
-            `;
+            const paymentItem = await pool.query(
+              `SELECT payment_id FROM payment_items
+              WHERE claim_id = $1 AND batch_id = $2
+              LIMIT 1`,
+              [claim.id, batch_id]
+            );
 
-            const findingResult = await sql`
-              INSERT INTO excess_payment_findings (
+            const findingResult = await pool.query(
+              `INSERT INTO excess_payment_findings (
                 claim_id, payment_id, finding_type, severity, title, description,
                 excess_amount, expected_amount, paid_amount, evidence,
                 contract_references, suggested_action, agent_confidence, status
               )
-              VALUES (
-                ${claim.id},
-                ${paymentItem.length > 0 ? paymentItem[0].payment_id : null},
-                ${finding.type},
-                ${finding.severity},
-                ${finding.title},
-                ${finding.description},
-                ${finding.excessAmount},
-                ${finding.expectedAmount},
-                ${finding.paidAmount},
-                ${JSON.stringify(finding.evidence)}::jsonb,
-                ${finding.contractReferences || []},
-                ${finding.suggestedAction},
-                ${result.confidence || 0.5},
+              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+              RETURNING *`,
+              [
+                claim.id,
+                paymentItem.rows.length > 0 ? paymentItem.rows[0].payment_id : null,
+                finding.type,
+                finding.severity,
+                finding.title,
+                finding.description,
+                finding.excessAmount,
+                finding.expectedAmount,
+                finding.paidAmount,
+                JSON.stringify(finding.evidence),
+                finding.contractReferences || [],
+                finding.suggestedAction,
+                result.confidence || 0.5,
                 'pending'
-              )
-              RETURNING *
-            `;
-            allFindings.push(findingResult[0]);
+              ]
+            );
+            allFindings.push(findingResult.rows[0]);
           }
         }
       }
 
       res.json({
         batch_id,
-        total_claims_scanned: batchClaims.length,
+        total_claims_scanned: batchClaims.rows.length,
         total_findings: allFindings.length,
         findings: allFindings.map(f => ({
           finding_id: f.finding_id,
@@ -826,9 +826,8 @@ router.get('/excess-payments/findings', async (req: Request, res: Response) => {
     const limitNum = parseInt(limit as string, 10);
     const offsetNum = parseInt(offset as string, 10);
 
-    // Build query conditionally
-    let query = sql`
-      SELECT 
+    let queryText = `
+      SELECT
         epf.*,
         pc.claim_type,
         pc.amount as claim_amount,
@@ -842,31 +841,39 @@ router.get('/excess-payments/findings', async (req: Request, res: Response) => {
       LEFT JOIN payment_batches pb ON pi.batch_id = pb.batch_id
       WHERE 1=1
     `;
+    const params: any[] = [];
 
     if (status) {
-      query = sql`${query} AND epf.status = ${status}`;
+      params.push(status);
+      queryText += ` AND epf.status = $${params.length}`;
     }
     if (severity) {
-      query = sql`${query} AND epf.severity = ${severity}`;
+      params.push(severity);
+      queryText += ` AND epf.severity = $${params.length}`;
     }
     if (finding_type) {
-      query = sql`${query} AND epf.finding_type = ${finding_type}`;
+      params.push(finding_type);
+      queryText += ` AND epf.finding_type = $${params.length}`;
     }
     if (claim_id) {
-      query = sql`${query} AND epf.claim_id = ${claim_id}`;
+      params.push(claim_id);
+      queryText += ` AND epf.claim_id = $${params.length}`;
     }
     if (start_date) {
-      query = sql`${query} AND epf.created_at >= ${start_date}`;
+      params.push(start_date);
+      queryText += ` AND epf.created_at >= $${params.length}`;
     }
     if (end_date) {
-      query = sql`${query} AND epf.created_at <= ${end_date}`;
+      params.push(end_date);
+      queryText += ` AND epf.created_at <= $${params.length}`;
     }
 
-    query = sql`${query} ORDER BY epf.created_at DESC LIMIT ${limitNum} OFFSET ${offsetNum}`;
+    params.push(limitNum, offsetNum);
+    queryText += ` ORDER BY epf.created_at DESC LIMIT $${params.length - 1} OFFSET $${params.length}`;
 
-    const findings = await query;
+    const findings = await pool.query(queryText, params);
 
-    res.json(findings.map((f: any) => ({
+    res.json(findings.rows.map((f: any) => ({
       finding_id: f.finding_id,
       claim_id: f.claim_id,
       payment_id: f.payment_id,
@@ -907,64 +914,84 @@ router.get('/excess-payments/metrics', async (req: Request, res: Response) => {
     const { start_date, end_date } = req.query;
 
     // Total pending findings
-    const pendingResult = await sql`
-      SELECT 
+    let pendingQuery = `
+      SELECT
         COUNT(*) as count,
         COALESCE(SUM(excess_amount), 0) as total_excess
       FROM excess_payment_findings
       WHERE status = 'pending'
-      ${start_date && end_date ? sql`AND created_at >= ${start_date} AND created_at <= ${end_date}` : sql``}
     `;
+    const pendingParams: any[] = [];
+    if (start_date && end_date) {
+      pendingParams.push(start_date, end_date);
+      pendingQuery += ` AND created_at >= $1 AND created_at <= $2`;
+    }
+    const pendingResult = await pool.query(pendingQuery, pendingParams);
 
     // Findings by severity
-    const severityResult = await sql`
-      SELECT 
+    let severityQuery = `
+      SELECT
         severity,
         COUNT(*) as count,
         COALESCE(SUM(excess_amount), 0) as total_excess
       FROM excess_payment_findings
       WHERE status = 'pending'
-      ${start_date && end_date ? sql`AND created_at >= ${start_date} AND created_at <= ${end_date}` : sql``}
-      GROUP BY severity
     `;
+    const severityParams: any[] = [];
+    if (start_date && end_date) {
+      severityParams.push(start_date, end_date);
+      severityQuery += ` AND created_at >= $1 AND created_at <= $2`;
+    }
+    severityQuery += ` GROUP BY severity`;
+    const severityResult = await pool.query(severityQuery, severityParams);
 
     // Findings by type
-    const typeResult = await sql`
-      SELECT 
+    let typeQuery = `
+      SELECT
         finding_type,
         COUNT(*) as count,
         COALESCE(SUM(excess_amount), 0) as total_excess
       FROM excess_payment_findings
       WHERE status = 'pending'
-      ${start_date && end_date ? sql`AND created_at >= ${start_date} AND created_at <= ${end_date}` : sql``}
-      GROUP BY finding_type
     `;
+    const typeParams: any[] = [];
+    if (start_date && end_date) {
+      typeParams.push(start_date, end_date);
+      typeQuery += ` AND created_at >= $1 AND created_at <= $2`;
+    }
+    typeQuery += ` GROUP BY finding_type`;
+    const typeResult = await pool.query(typeQuery, typeParams);
 
     // Total resolved this period
-    const resolvedResult = await sql`
-      SELECT 
+    let resolvedQuery = `
+      SELECT
         COUNT(*) as count,
         COALESCE(SUM(excess_amount), 0) as total_recovered
       FROM excess_payment_findings
       WHERE status = 'resolved'
-      ${start_date && end_date ? sql`AND reviewed_at >= ${start_date} AND reviewed_at <= ${end_date}` : sql``}
     `;
+    const resolvedParams: any[] = [];
+    if (start_date && end_date) {
+      resolvedParams.push(start_date, end_date);
+      resolvedQuery += ` AND reviewed_at >= $1 AND reviewed_at <= $2`;
+    }
+    const resolvedResult = await pool.query(resolvedQuery, resolvedParams);
 
     res.json({
-      total_pending: Number(pendingResult[0]?.count || 0),
-      total_excess_amount: Number(pendingResult[0]?.total_excess || 0),
-      by_severity: severityResult.map((r: any) => ({
+      total_pending: Number(pendingResult.rows[0]?.count || 0),
+      total_excess_amount: Number(pendingResult.rows[0]?.total_excess || 0),
+      by_severity: severityResult.rows.map((r: any) => ({
         severity: r.severity,
         count: Number(r.count),
         total_excess: Number(r.total_excess)
       })),
-      by_type: typeResult.map((r: any) => ({
+      by_type: typeResult.rows.map((r: any) => ({
         finding_type: r.finding_type,
         count: Number(r.count),
         total_excess: Number(r.total_excess)
       })),
-      resolved_count: Number(resolvedResult[0]?.count || 0),
-      total_recovered: Number(resolvedResult[0]?.total_recovered || 0)
+      resolved_count: Number(resolvedResult.rows[0]?.count || 0),
+      total_recovered: Number(resolvedResult.rows[0]?.total_recovered || 0)
     });
   } catch (error) {
     console.error('Error fetching excess payment metrics:', error);
@@ -985,21 +1012,23 @@ router.post('/excess-payments/findings/:findingId/action', async (req: Request, 
       return res.status(400).json({ error: 'Valid action is required (resolved, dismissed, reviewed)' });
     }
 
-    await sql`
-      UPDATE excess_payment_findings
-      SET 
-        status = ${action},
-        reviewed_by = ${admin_id},
+    await pool.query(
+      `UPDATE excess_payment_findings
+      SET
+        status = $1,
+        reviewed_by = $2,
         reviewed_at = NOW(),
-        resolution_notes = ${resolution_notes || null}
-      WHERE finding_id = ${findingId}
-    `;
+        resolution_notes = $3
+      WHERE finding_id = $4`,
+      [action, admin_id, resolution_notes || null, findingId]
+    );
 
     // Log to audit trail
-    await sql`
-      INSERT INTO audit_log (entity_type, entity_id, action, performed_by, changes)
-      VALUES ('excess_payment_finding', ${findingId}, ${action}, ${admin_id}, ${JSON.stringify({ resolution_notes })}::jsonb)
-    `;
+    await pool.query(
+      `INSERT INTO audit_log (entity_type, entity_id, action, performed_by, changes)
+      VALUES ($1, $2, $3, $4, $5)`,
+      ['excess_payment_finding', findingId, action, admin_id, JSON.stringify({ resolution_notes })]
+    );
 
     res.json({ success: true, message: `Finding ${action} successfully` });
   } catch (error) {
@@ -1021,31 +1050,34 @@ router.post('/excess-payments/batch-review', async (req: Request, res: Response)
     }
 
     // Get total excess amount
-    const findings = await sql`
-      SELECT SUM(excess_amount) as total_excess
+    const findings = await pool.query(
+      `SELECT SUM(excess_amount) as total_excess
       FROM excess_payment_findings
-      WHERE finding_id = ANY(${finding_ids})
-    `;
+      WHERE finding_id = ANY($1)`,
+      [finding_ids]
+    );
 
-    const totalExcess = Number(findings[0]?.total_excess || 0);
+    const totalExcess = Number(findings.rows[0]?.total_excess || 0);
 
     // Create review session
-    const reviewResult = await sql`
-      INSERT INTO excess_payment_reviews (
+    const reviewResult = await pool.query(
+      `INSERT INTO excess_payment_reviews (
         review_date, reviewed_by, total_findings, total_excess_amount, review_notes
       )
-      VALUES (CURRENT_DATE, ${admin_id}, ${finding_ids.length}, ${totalExcess}, ${review_notes || null})
-      RETURNING *
-    `;
+      VALUES (CURRENT_DATE, $1, $2, $3, $4)
+      RETURNING *`,
+      [admin_id, finding_ids.length, totalExcess, review_notes || null]
+    );
 
-    const reviewId = reviewResult[0].review_id;
+    const reviewId = reviewResult.rows[0].review_id;
 
     // Link findings to review
-    await sql`
-      UPDATE excess_payment_findings
-      SET review_id = ${reviewId}
-      WHERE finding_id = ANY(${finding_ids})
-    `;
+    await pool.query(
+      `UPDATE excess_payment_findings
+      SET review_id = $1
+      WHERE finding_id = ANY($2)`,
+      [reviewId, finding_ids]
+    );
 
     res.json({
       review_id: reviewId,
@@ -1068,14 +1100,14 @@ router.post('/excess-payments/batch-review', async (req: Request, res: Response)
  */
 router.get('/settings/config', async (req: Request, res: Response) => {
   try {
-    const config = await sql`
-      SELECT *
+    const config = await pool.query(
+      `SELECT *
       FROM system_config
-      ORDER BY config_key ASC
-    `;
+      ORDER BY config_key ASC`
+    );
 
     const configObj: Record<string, any> = {};
-    config.forEach((c: any) => {
+    config.rows.forEach((c: any) => {
       configObj[c.config_key] = {
         value: c.config_value,
         description: c.description,
@@ -1101,74 +1133,32 @@ router.get('/settings/audit-log', async (req: Request, res: Response) => {
 
     const limitNum = parseInt(limit as string, 10);
 
-    // Build query conditionally using Neon's template literal syntax
-    let logs;
-    if (entity_type && start_date && end_date) {
-      logs = await sql`
-        SELECT *
-        FROM audit_log
-        WHERE entity_type = ${entity_type} AND created_at >= ${start_date} AND created_at <= ${end_date}
-        ORDER BY created_at DESC
-        LIMIT ${limitNum}
-      `;
-    } else if (entity_type && start_date) {
-      logs = await sql`
-        SELECT *
-        FROM audit_log
-        WHERE entity_type = ${entity_type} AND created_at >= ${start_date}
-        ORDER BY created_at DESC
-        LIMIT ${limitNum}
-      `;
-    } else if (entity_type && end_date) {
-      logs = await sql`
-        SELECT *
-        FROM audit_log
-        WHERE entity_type = ${entity_type} AND created_at <= ${end_date}
-        ORDER BY created_at DESC
-        LIMIT ${limitNum}
-      `;
-    } else if (start_date && end_date) {
-      logs = await sql`
-        SELECT *
-        FROM audit_log
-        WHERE created_at >= ${start_date} AND created_at <= ${end_date}
-        ORDER BY created_at DESC
-        LIMIT ${limitNum}
-      `;
-    } else if (entity_type) {
-      logs = await sql`
-        SELECT *
-        FROM audit_log
-        WHERE entity_type = ${entity_type}
-        ORDER BY created_at DESC
-        LIMIT ${limitNum}
-      `;
-    } else if (start_date) {
-      logs = await sql`
-        SELECT *
-        FROM audit_log
-        WHERE created_at >= ${start_date}
-        ORDER BY created_at DESC
-        LIMIT ${limitNum}
-      `;
-    } else if (end_date) {
-      logs = await sql`
-        SELECT *
-        FROM audit_log
-        WHERE created_at <= ${end_date}
-        ORDER BY created_at DESC
-        LIMIT ${limitNum}
-      `;
-    } else {
-      logs = await sql`
-        SELECT *
-        FROM audit_log
-        ORDER BY created_at DESC
-        LIMIT ${limitNum}
-      `;
+    let queryText = `
+      SELECT *
+      FROM audit_log
+      WHERE 1=1
+    `;
+    const params: any[] = [];
+
+    if (entity_type) {
+      params.push(entity_type);
+      queryText += ` AND entity_type = $${params.length}`;
+    }
+    if (start_date) {
+      params.push(start_date);
+      queryText += ` AND created_at >= $${params.length}`;
+    }
+    if (end_date) {
+      params.push(end_date);
+      queryText += ` AND created_at <= $${params.length}`;
     }
 
-    res.json(logs.map((l: any) => ({
+    params.push(limitNum);
+    queryText += ` ORDER BY created_at DESC LIMIT $${params.length}`;
+
+    const logs = await pool.query(queryText, params);
+
+    res.json(logs.rows.map((l: any) => ({
       log_id: l.log_id,
       entity_type: l.entity_type,
       entity_id: l.entity_id,

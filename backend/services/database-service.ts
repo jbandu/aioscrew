@@ -5,14 +5,18 @@
 import { config } from 'dotenv';
 config();
 
-import { neon } from '@neondatabase/serverless';
+import pkg from 'pg';
+const { Pool } = pkg;
 import type { ClaimInput, TripData, CrewData, HistoricalData } from '../agents/shared/types.js';
 
-const sql = neon(process.env.DATABASE_URL!);
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+});
 
 export async function getClaimById(claimId: string): Promise<ClaimInput | null> {
   try {
-    const results = await sql`
+    const results = await pool.query(`
       SELECT
         pc.id,
         pc.id as claim_number,
@@ -27,13 +31,13 @@ export async function getClaimById(claimId: string): Promise<ClaimInput | null> 
       FROM pay_claims pc
       LEFT JOIN crew_members cm ON pc.crew_id = cm.id
       LEFT JOIN trips t ON pc.trip_id = t.id
-      WHERE pc.id = ${claimId}
+      WHERE pc.id = $1
       LIMIT 1
-    `;
+    `, [claimId]);
 
-    if (results.length === 0) return null;
+    if (results.rows.length === 0) return null;
 
-    const row = results[0];
+    const row = results.rows[0];
     return {
       id: row.id as string,
       claimNumber: row.claim_number as string,
@@ -54,16 +58,16 @@ export async function getClaimById(claimId: string): Promise<ClaimInput | null> 
 
 export async function getTripById(tripId: string): Promise<TripData | null> {
   try {
-    const results = await sql`
+    const results = await pool.query(`
       SELECT *
       FROM trips
-      WHERE id = ${tripId}
+      WHERE id = $1
       LIMIT 1
-    `;
+    `, [tripId]);
 
-    if (results.length === 0) return null;
+    if (results.rows.length === 0) return null;
 
-    const row = results[0];
+    const row = results.rows[0];
     return {
       id: row.id as string,
       date: new Date(row.trip_date as string),
@@ -86,16 +90,16 @@ export async function getTripById(tripId: string): Promise<TripData | null> {
 
 export async function getCrewMemberById(crewId: string): Promise<CrewData | null> {
   try {
-    const results = await sql`
+    const results = await pool.query(`
       SELECT *
       FROM crew_members
-      WHERE id = ${crewId}
+      WHERE id = $1
       LIMIT 1
-    `;
+    `, [crewId]);
 
-    if (results.length === 0) return null;
+    if (results.rows.length === 0) return null;
 
-    const row = results[0];
+    const row = results.rows[0];
     return {
       id: row.id as string,
       name: row.name as string,
@@ -118,28 +122,28 @@ export async function getHistoricalData(
 ): Promise<HistoricalData> {
   try {
     // Get similar claims (same type)
-    const similarClaims = await sql`
+    const similarClaims = await pool.query(`
       SELECT COUNT(*) as count, AVG(amount) as avg_amount
       FROM pay_claims
-      WHERE claim_type = ${claimType}
+      WHERE claim_type = $1
       AND status IN ('approved', 'ai-validated')
-    `;
+    `, [claimType]);
 
     // Get approval rate for this claim type
-    const approvalStats = await sql`
+    const approvalStats = await pool.query(`
       SELECT
         COUNT(*) as total,
         SUM(CASE WHEN status IN ('approved', 'ai-validated') THEN 1 ELSE 0 END) as approved
       FROM pay_claims
-      WHERE claim_type = ${claimType}
-    `;
+      WHERE claim_type = $1
+    `, [claimType]);
 
     // Get recent claims by this crew member (last 7 days)
-    const recentClaims = await sql`
+    const recentClaims = await pool.query(`
       SELECT
         id,
         id as claim_number,
-        ${crewId} as crew_member_id,
+        $1 as crew_member_id,
         '' as crew_member_name,
         claim_type as type,
         trip_id,
@@ -147,22 +151,22 @@ export async function getHistoricalData(
         amount,
         claim_date as submitted_date
       FROM pay_claims
-      WHERE crew_id = ${crewId}
+      WHERE crew_id = $1
       AND claim_date >= CURRENT_DATE - INTERVAL '7 days'
       ORDER BY claim_date DESC
       LIMIT 10
-    `;
+    `, [crewId]);
 
-    const similarCount = Number(similarClaims[0]?.count || 0);
-    const avgAmount = Number(similarClaims[0]?.avg_amount || 0);
-    const total = Number(approvalStats[0]?.total || 1);
-    const approved = Number(approvalStats[0]?.approved || 0);
+    const similarCount = Number(similarClaims.rows[0]?.count || 0);
+    const avgAmount = Number(similarClaims.rows[0]?.avg_amount || 0);
+    const total = Number(approvalStats.rows[0]?.total || 1);
+    const approved = Number(approvalStats.rows[0]?.approved || 0);
 
     return {
       similarClaims: similarCount,
       approvalRate: total > 0 ? approved / total : 0,
       averageAmount: avgAmount,
-      recentClaimsByUser: recentClaims.map((row: any) => ({
+      recentClaimsByUser: recentClaims.rows.map((row: any) => ({
         id: row.id as string,
         claimNumber: row.claim_number as string,
         crewMemberId: row.crew_member_id as string,
@@ -192,15 +196,15 @@ export async function updateClaimWithValidation(
   contractReference: string
 ): Promise<boolean> {
   try {
-    await sql`
+    await pool.query(`
       UPDATE pay_claims
       SET
-        ai_validated = ${validated},
-        ai_explanation = ${explanation},
-        contract_reference = ${contractReference},
+        ai_validated = $1,
+        ai_explanation = $2,
+        contract_reference = $3,
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = ${claimId}
-    `;
+      WHERE id = $4
+    `, [validated, explanation, contractReference, claimId]);
     return true;
   } catch (error) {
     console.error('Error updating claim:', error);

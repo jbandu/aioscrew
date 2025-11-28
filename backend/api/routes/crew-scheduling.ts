@@ -13,10 +13,14 @@ import {
   createDisruption,
   getRosterAssignments
 } from '../../services/crew-scheduling-service.js';
-import { neon } from '@neondatabase/serverless';
+import pkg from 'pg';
+const { Pool } = pkg;
 
 const router = Router();
-const sql = neon(process.env.DATABASE_URL!);
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+});
 
 // ============================================================================
 // REGULATORY RULES ENDPOINTS
@@ -56,27 +60,28 @@ router.post('/rules', async (req: Request, res: Response) => {
       description
     } = req.body;
 
-    const result = await sql`
-      INSERT INTO regulatory_rules (
+    const result = await pool.query(
+      `INSERT INTO regulatory_rules (
         rule_name, rule_type, jurisdiction, rule_category,
         limit_value, limit_unit, period_type, conditions,
         effective_date, description
       )
-      VALUES (
-        ${rule_name}, ${rule_type}, ${jurisdiction}, ${rule_category},
-        ${limit_value}, ${limit_unit}, ${period_type}, ${JSON.stringify(conditions || {})}::jsonb,
-        ${effective_date || null}, ${description || null}
-      )
-      RETURNING *
-    `;
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      RETURNING *`,
+      [
+        rule_name, rule_type, jurisdiction, rule_category,
+        limit_value, limit_unit, period_type, JSON.stringify(conditions || {}),
+        effective_date || null, description || null
+      ]
+    );
 
     res.json({
-      ruleId: result[0].rule_id,
-      ruleName: result[0].rule_name,
-      ruleType: result[0].rule_type,
-      jurisdiction: result[0].jurisdiction,
-      limitValue: Number(result[0].limit_value),
-      limitUnit: result[0].limit_unit
+      ruleId: result.rows[0].rule_id,
+      ruleName: result.rows[0].rule_name,
+      ruleType: result.rows[0].rule_type,
+      jurisdiction: result.rows[0].jurisdiction,
+      limitValue: Number(result.rows[0].limit_value),
+      limitUnit: result.rows[0].limit_unit
     });
   } catch (error) {
     console.error('Error creating rule:', error);
@@ -181,24 +186,27 @@ router.get('/roster/versions', async (req: Request, res: Response) => {
   try {
     const { periodStart, periodEnd } = req.query;
 
-    let query = sql`
+    let queryText = `
       SELECT *
       FROM roster_versions
       WHERE 1=1
     `;
+    const params: any[] = [];
 
     if (periodStart) {
-      query = sql`${query} AND roster_period_start >= ${periodStart}`;
+      params.push(periodStart);
+      queryText += ` AND roster_period_start >= $${params.length}`;
     }
     if (periodEnd) {
-      query = sql`${query} AND roster_period_end <= ${periodEnd}`;
+      params.push(periodEnd);
+      queryText += ` AND roster_period_end <= $${params.length}`;
     }
 
-    query = sql`${query} ORDER BY created_at DESC`;
+    queryText += ` ORDER BY created_at DESC`;
 
-    const versions = await query;
+    const versions = await pool.query(queryText, params);
 
-    res.json(versions.map((v: any) => ({
+    res.json(versions.rows.map((v: any) => ({
       versionId: v.version_id,
       rosterPeriodStart: v.roster_period_start,
       rosterPeriodEnd: v.roster_period_end,
@@ -229,38 +237,42 @@ router.post('/roster/publish', async (req: Request, res: Response) => {
     }
 
     // Deactivate all other versions for the same period
-    const version = await sql`
-      SELECT roster_period_start, roster_period_end
+    const version = await pool.query(
+      `SELECT roster_period_start, roster_period_end
       FROM roster_versions
-      WHERE version_id = ${versionId}
-    `;
+      WHERE version_id = $1`,
+      [versionId]
+    );
 
-    if (version.length === 0) {
+    if (version.rows.length === 0) {
       return res.status(404).json({ error: 'Roster version not found' });
     }
 
-    await sql`
-      UPDATE roster_versions
+    await pool.query(
+      `UPDATE roster_versions
       SET is_active = false
-      WHERE roster_period_start = ${version[0].roster_period_start}
-      AND roster_period_end = ${version[0].roster_period_end}
-      AND version_id != ${versionId}
-    `;
+      WHERE roster_period_start = $1
+      AND roster_period_end = $2
+      AND version_id != $3`,
+      [version.rows[0].roster_period_start, version.rows[0].roster_period_end, versionId]
+    );
 
     // Activate this version
-    await sql`
-      UPDATE roster_versions
+    await pool.query(
+      `UPDATE roster_versions
       SET version_type = 'published', is_active = true
-      WHERE version_id = ${versionId}
-    `;
+      WHERE version_id = $1`,
+      [versionId]
+    );
 
     // Update assignment statuses
-    await sql`
-      UPDATE roster_assignments
+    await pool.query(
+      `UPDATE roster_assignments
       SET status = 'confirmed'
-      WHERE roster_period_start = ${version[0].roster_period_start}
-      AND roster_period_end = ${version[0].roster_period_end}
-    `;
+      WHERE roster_period_start = $1
+      AND roster_period_end = $2`,
+      [version.rows[0].roster_period_start, version.rows[0].roster_period_end]
+    );
 
     res.json({ success: true, message: 'Roster published successfully' });
   } catch (error) {
@@ -349,69 +361,75 @@ router.post('/disruptions/:disruptionId/resolve', async (req: Request, res: Resp
     } = req.body;
 
     // Get disruption
-    const disruption = await sql`
-      SELECT *
+    const disruption = await pool.query(
+      `SELECT *
       FROM disruptions
-      WHERE disruption_id = ${disruptionId}
-    `;
+      WHERE disruption_id = $1`,
+      [disruptionId]
+    );
 
-    if (disruption.length === 0) {
+    if (disruption.rows.length === 0) {
       return res.status(404).json({ error: 'Disruption not found' });
     }
 
     // Create reassignment
     if (originalAssignmentId && replacementCrewId) {
       // Get original assignment
-      const originalAssignment = await sql`
-        SELECT *
+      const originalAssignment = await pool.query(
+        `SELECT *
         FROM roster_assignments
-        WHERE assignment_id = ${originalAssignmentId}
-      `;
+        WHERE assignment_id = $1`,
+        [originalAssignmentId]
+      );
 
-      if (originalAssignment.length > 0) {
+      if (originalAssignment.rows.length > 0) {
         // Create new assignment for replacement crew
-        const newAssignment = await sql`
-          INSERT INTO roster_assignments (
+        const newAssignment = await pool.query(
+          `INSERT INTO roster_assignments (
             roster_period_start, roster_period_end, crew_id, pairing_id, trip_id,
             assignment_type, start_date, end_date, status
           )
           SELECT
-            roster_period_start, roster_period_end, ${replacementCrewId}, pairing_id, trip_id,
+            roster_period_start, roster_period_end, $1, pairing_id, trip_id,
             assignment_type, start_date, end_date, 'confirmed'
           FROM roster_assignments
-          WHERE assignment_id = ${originalAssignmentId}
-          RETURNING *
-        `;
+          WHERE assignment_id = $2
+          RETURNING *`,
+          [replacementCrewId, originalAssignmentId]
+        );
 
         // Cancel original assignment
-        await sql`
-          UPDATE roster_assignments
+        await pool.query(
+          `UPDATE roster_assignments
           SET status = 'cancelled'
-          WHERE assignment_id = ${originalAssignmentId}
-        `;
+          WHERE assignment_id = $1`,
+          [originalAssignmentId]
+        );
 
         // Create reassignment record
-        await sql`
-          INSERT INTO disruption_reassignments (
+        await pool.query(
+          `INSERT INTO disruption_reassignments (
             disruption_id, original_assignment_id, new_assignment_id,
             original_crew_id, replacement_crew_id, reassignment_reason,
             compliance_status, approved_by, approved_at
           )
-          VALUES (
-            ${disruptionId}, ${originalAssignmentId}, ${newAssignment[0].assignment_id},
-            ${originalAssignment[0].crew_id}, ${replacementCrewId}, ${reassignmentReason},
-            'compliant', ${approvedBy || 'SYSTEM'}, NOW()
-          )
-        `;
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())`,
+          [
+            disruptionId, originalAssignmentId, newAssignment.rows[0].assignment_id,
+            originalAssignment.rows[0].crew_id, replacementCrewId, reassignmentReason,
+            'compliant', approvedBy || 'SYSTEM'
+          ]
+        );
       }
     }
 
     // Update disruption status
-    await sql`
-      UPDATE disruptions
-      SET status = 'resolved', resolved_at = NOW(), resolved_by = ${approvedBy || 'SYSTEM'}
-      WHERE disruption_id = ${disruptionId}
-    `;
+    await pool.query(
+      `UPDATE disruptions
+      SET status = 'resolved', resolved_at = NOW(), resolved_by = $1
+      WHERE disruption_id = $2`,
+      [approvedBy || 'SYSTEM', disruptionId]
+    );
 
     res.json({ success: true, message: 'Disruption resolved successfully' });
   } catch (error) {
@@ -458,14 +476,15 @@ router.get('/crew/:crewId/qualifications', async (req: Request, res: Response) =
   try {
     const { crewId } = req.params;
 
-    const qualifications = await sql`
-      SELECT *
+    const qualifications = await pool.query(
+      `SELECT *
       FROM crew_qualifications
-      WHERE crew_id = ${crewId}
-      ORDER BY qualification_type, qualification_code
-    `;
+      WHERE crew_id = $1
+      ORDER BY qualification_type, qualification_code`,
+      [crewId]
+    );
 
-    res.json(qualifications.map((q: any) => ({
+    res.json(qualifications.rows.map((q: any) => ({
       qualificationId: q.qualification_id,
       crewId: q.crew_id,
       qualificationType: q.qualification_type,
@@ -496,7 +515,7 @@ router.get('/reports/compliance', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'periodStart and periodEnd are required' });
     }
 
-    let query = sql`
+    let queryText = `
       SELECT
         re.*,
         cm.name as crew_name,
@@ -506,23 +525,26 @@ router.get('/reports/compliance', async (req: Request, res: Response) => {
       FROM rule_evaluations re
       JOIN crew_members cm ON re.crew_id = cm.id
       JOIN regulatory_rules rr ON re.rule_id = rr.rule_id
-      WHERE re.evaluation_date >= ${periodStart}
-      AND re.evaluation_date <= ${periodEnd}
+      WHERE re.evaluation_date >= $1
+      AND re.evaluation_date <= $2
     `;
+    const params: any[] = [periodStart, periodEnd];
 
     if (crewId) {
-      query = sql`${query} AND re.crew_id = ${crewId}`;
+      params.push(crewId);
+      queryText += ` AND re.crew_id = $${params.length}`;
     }
     if (base) {
-      query = sql`${query} AND cm.base = ${base}`;
+      params.push(base);
+      queryText += ` AND cm.base = $${params.length}`;
     }
 
-    query = sql`${query} ORDER BY re.evaluation_date DESC, re.is_compliant ASC`;
+    queryText += ` ORDER BY re.evaluation_date DESC, re.is_compliant ASC`;
 
-    const evaluations = await query;
+    const evaluations = await pool.query(queryText, params);
 
-    const violations = evaluations.filter((e: any) => !e.is_compliant);
-    const totalEvaluations = evaluations.length;
+    const violations = evaluations.rows.filter((e: any) => !e.is_compliant);
+    const totalEvaluations = evaluations.rows.length;
 
     res.json({
       periodStart,

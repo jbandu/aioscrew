@@ -10,10 +10,14 @@
  */
 
 import { callUnifiedLLMWithJSON } from '../shared/unified-llm-client.js';
-import { neon } from '@neondatabase/serverless';
+import pkg from 'pg';
+const { Pool } = pkg;
 import type { AgentInput, AgentResult } from '../shared/types.js';
 
-const sql = neon(process.env.DATABASE_URL!);
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+});
 
 interface ExcessPaymentFinding {
   type: 'duplicate' | 'overpayment' | 'contract_violation' | 'ineligible' | 'anomaly' | 'calculation_error';
@@ -44,11 +48,11 @@ interface ExcessPaymentResponse {
  */
 async function checkDuplicates(claimId: string, crewId: string, amount: number, claimDate: Date): Promise<ExcessPaymentFinding[]> {
   const findings: ExcessPaymentFinding[] = [];
-  
+
   try {
     // Check for duplicate payments in payment_items
-    const duplicates = await sql`
-      SELECT 
+    const duplicates = await pool.query(
+      `SELECT
         pi.payment_id,
         pi.claim_id,
         pi.amount,
@@ -57,22 +61,23 @@ async function checkDuplicates(claimId: string, crewId: string, amount: number, 
         pb.batch_date
       FROM payment_items pi
       JOIN payment_batches pb ON pi.batch_id = pb.batch_id
-      WHERE pi.claim_id = ${claimId}
+      WHERE pi.claim_id = $1
       AND pi.status = 'completed'
-      ORDER BY pi.paid_at DESC
-    `;
+      ORDER BY pi.paid_at DESC`,
+      [claimId]
+    );
 
-    if (duplicates.length > 1) {
-      const totalPaid = duplicates.reduce((sum: number, d: any) => sum + Number(d.amount || 0), 0);
+    if (duplicates.rows.length > 1) {
+      const totalPaid = duplicates.rows.reduce((sum: number, d: any) => sum + Number(d.amount || 0), 0);
       findings.push({
         type: 'duplicate',
         severity: 'high',
         title: 'Duplicate Payment Detected',
-        description: `This claim has been paid ${duplicates.length} times. Total paid: $${totalPaid.toFixed(2)}`,
+        description: `This claim has been paid ${duplicates.rows.length} times. Total paid: $${totalPaid.toFixed(2)}`,
         excessAmount: totalPaid - amount,
         expectedAmount: amount,
         paidAmount: totalPaid,
-        evidence: duplicates.map((d: any) => 
+        evidence: duplicates.rows.map((d: any) =>
           `Paid $${Number(d.amount).toFixed(2)} on ${new Date(d.paid_at).toLocaleDateString()} in batch ${d.batch_id}`
         ),
         suggestedAction: 'Review all payment batches and reverse duplicate payments'
@@ -80,8 +85,8 @@ async function checkDuplicates(claimId: string, crewId: string, amount: number, 
     }
 
     // Check for similar claims paid around the same time
-    const similarClaims = await sql`
-      SELECT 
+    const similarClaims = await pool.query(
+      `SELECT
         pc.id,
         pc.amount,
         pc.claim_date,
@@ -89,20 +94,21 @@ async function checkDuplicates(claimId: string, crewId: string, amount: number, 
         pi.amount as paid_amount
       FROM pay_claims pc
       JOIN payment_items pi ON pc.id = pi.claim_id
-      WHERE pc.crew_id = ${crewId}
-      AND pc.claim_type = (SELECT claim_type FROM pay_claims WHERE id = ${claimId})
-      AND ABS(EXTRACT(EPOCH FROM (pc.claim_date - ${claimDate.toISOString()}))) < 86400 * 7
+      WHERE pc.crew_id = $1
+      AND pc.claim_type = (SELECT claim_type FROM pay_claims WHERE id = $2)
+      AND ABS(EXTRACT(EPOCH FROM (pc.claim_date - $3))) < 86400 * 7
       AND pi.status = 'completed'
-      AND pc.id != ${claimId}
+      AND pc.id != $2
       ORDER BY pi.paid_at DESC
-      LIMIT 5
-    `;
+      LIMIT 5`,
+      [crewId, claimId, claimDate.toISOString()]
+    );
 
-    if (similarClaims.length > 0) {
-      const similarAmounts = similarClaims.filter((c: any) => 
+    if (similarClaims.rows.length > 0) {
+      const similarAmounts = similarClaims.rows.filter((c: any) =>
         Math.abs(Number(c.amount) - amount) < amount * 0.1
       );
-      
+
       if (similarAmounts.length > 0) {
         findings.push({
           type: 'duplicate',
@@ -112,7 +118,7 @@ async function checkDuplicates(claimId: string, crewId: string, amount: number, 
           excessAmount: 0,
           expectedAmount: amount,
           paidAmount: amount,
-          evidence: similarAmounts.map((c: any) => 
+          evidence: similarAmounts.map((c: any) =>
             `Claim ${c.id}: $${Number(c.amount).toFixed(2)} paid on ${new Date(c.paid_at).toLocaleDateString()}`
           ),
           suggestedAction: 'Verify these are distinct claims and not duplicates'
@@ -134,23 +140,24 @@ async function checkHistoricalPatterns(crewId: string, claimType: string, amount
 
   try {
     // Get historical average for this claim type
-    const historicalStats = await sql`
-      SELECT 
+    const historicalStats = await pool.query(
+      `SELECT
         AVG(COALESCE(pc.amount_approved, pc.amount)) as avg_amount,
         STDDEV(COALESCE(pc.amount_approved, pc.amount)) as stddev_amount,
         MAX(COALESCE(pc.amount_approved, pc.amount)) as max_amount,
         COUNT(*) as claim_count
       FROM pay_claims pc
-      WHERE pc.crew_id = ${crewId}
-      AND pc.claim_type = ${claimType}
+      WHERE pc.crew_id = $1
+      AND pc.claim_type = $2
       AND pc.status IN ('approved', 'auto_approved', 'ai-validated')
-      AND pc.claim_date >= CURRENT_DATE - INTERVAL '90 days'
-    `;
+      AND pc.claim_date >= CURRENT_DATE - INTERVAL '90 days'`,
+      [crewId, claimType]
+    );
 
-    if (historicalStats.length > 0 && historicalStats[0].claim_count > 0) {
-      const avgAmount = Number(historicalStats[0].avg_amount || 0);
-      const stddev = Number(historicalStats[0].stddev_amount || 0);
-      const maxAmount = Number(historicalStats[0].max_amount || 0);
+    if (historicalStats.rows.length > 0 && historicalStats.rows[0].claim_count > 0) {
+      const avgAmount = Number(historicalStats.rows[0].avg_amount || 0);
+      const stddev = Number(historicalStats.rows[0].stddev_amount || 0);
+      const maxAmount = Number(historicalStats.rows[0].max_amount || 0);
 
       // Flag if amount is significantly higher than average (more than 2 standard deviations)
       if (avgAmount > 0 && amount > avgAmount + (2 * stddev)) {
@@ -278,34 +285,36 @@ export async function runExcessPaymentDetector(input: AgentInput): Promise<Agent
 
     // 3. Use LLM to analyze claim details for other excess payment scenarios
     const systemPrompt = buildExcessPaymentSystemPrompt();
-    
+
     // Get payment history for this claim
-    const paymentHistory = await sql`
-      SELECT 
+    const paymentHistory = await pool.query(
+      `SELECT
         pi.*,
         pb.batch_date,
         pb.status as batch_status
       FROM payment_items pi
       JOIN payment_batches pb ON pi.batch_id = pb.batch_id
-      WHERE pi.claim_id = ${claim.id}
-      ORDER BY pi.paid_at DESC
-    `;
+      WHERE pi.claim_id = $1
+      ORDER BY pi.paid_at DESC`,
+      [claim.id]
+    );
 
     // Get approved amount
-    const claimDetails = await sql`
-      SELECT 
+    const claimDetails = await pool.query(
+      `SELECT
         amount,
         COALESCE(amount_approved, amount) as approved_amount,
         status,
         ai_reasoning,
         contract_references
       FROM pay_claims
-      WHERE id = ${claim.id}
-      LIMIT 1
-    `;
+      WHERE id = $1
+      LIMIT 1`,
+      [claim.id]
+    );
 
-    const approvedAmount = claimDetails.length > 0 
-      ? Number(claimDetails[0].approved_amount || claimDetails[0].amount || 0)
+    const approvedAmount = claimDetails.rows.length > 0
+      ? Number(claimDetails.rows[0].approved_amount || claimDetails.rows[0].amount || 0)
       : claim.amount;
 
     const userPrompt = `Analyze this claim for excess payment scenarios:
@@ -321,8 +330,8 @@ CLAIM INFORMATION:
 - Description: ${claim.description || 'N/A'}
 
 PAYMENT HISTORY:
-${paymentHistory.length > 0 
-  ? paymentHistory.map((p: any) => 
+${paymentHistory.rows.length > 0
+  ? paymentHistory.rows.map((p: any) =>
       `- Paid $${Number(p.amount).toFixed(2)} on ${new Date(p.paid_at).toISOString()} in batch ${p.batch_id} (Status: ${p.status})`
     ).join('\n')
   : 'No payments recorded yet'
@@ -347,7 +356,7 @@ ${input.crew ? `
 ` : 'No crew data available'}
 
 EXISTING FINDINGS FROM AUTOMATED CHECKS:
-${findings.length > 0 
+${findings.length > 0
   ? findings.map(f => `- ${f.title}: ${f.description}`).join('\n')
   : 'No automated findings'
 }
@@ -371,7 +380,7 @@ Provide detailed findings with evidence and recommended actions.`;
 
     // Merge automated findings with LLM findings
     const allFindings = [...findings, ...(data.findings || [])];
-    
+
     // Calculate total excess amount
     const totalExcess = allFindings.reduce((sum, f) => sum + f.excessAmount, 0);
 

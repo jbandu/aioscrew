@@ -3,7 +3,8 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { neon } from '@neondatabase/serverless';
+import pkg from 'pg';
+const { Pool } = pkg;
 import { orchestrateClaimValidation } from '../../agents/core/orchestrator.js';
 import {
   getClaimById,
@@ -18,7 +19,10 @@ import type { TestDataConfig } from '../../agents/core/test-data-generator.js';
 import { insertTestData } from '../../services/test-data-inserter.js';
 
 const router = Router();
-const sql = process.env.DATABASE_URL ? neon(process.env.DATABASE_URL) : null;
+const pool = process.env.DATABASE_URL ? new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+}) : null;
 
 /**
  * POST /api/agents/validate
@@ -315,23 +319,23 @@ router.post('/test-data/generate', async (req: Request, res: Response) => {
  */
 router.post('/test-data/cleanup', async (req: Request, res: Response) => {
   try {
-    if (!sql) {
+    if (!pool) {
       return res.status(500).json({
         error: 'Database not configured'
       });
     }
 
     const { preserveCrew = true } = req.body || {};
-    await sql`
+    await pool.query(`
       TRUNCATE TABLE pay_claims, trips, disruptions, compliance_violations
       RESTART IDENTITY CASCADE
-    `;
+    `);
 
     if (!preserveCrew) {
-      await sql`
+      await pool.query(`
         TRUNCATE TABLE crew_members
         RESTART IDENTITY CASCADE
-      `;
+      `);
     }
 
     res.json({

@@ -1,10 +1,6 @@
-import { neon } from '@neondatabase/serverless';
-
-// For local development, skip direct database access from frontend
-// All database operations should go through the backend API
-const sql = import.meta.env.VITE_DATABASE_URL
-  ? neon(import.meta.env.VITE_DATABASE_URL)
-  : null as any;
+// Frontend database operations have been moved to backend API
+// This file is kept for backwards compatibility but no longer uses direct database access
+const sql = null as any;
 
 export { sql };
 
