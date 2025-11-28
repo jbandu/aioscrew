@@ -223,59 +223,16 @@ router.post('/scraping/jobs', async (req, res) => {
       timestamp: new Date().toISOString()
     });
 
-    // Create backup if requested
-    let backupId = null;
-    if (backupBeforeUpdate) {
-      try {
-        // Emit: Creating backup
-        io.emit('scraping:progress', {
-          airlineCode: airlineCode.toUpperCase(),
-          jobId,
-          phase: 'backup',
-          message: 'Creating backup of current fleet data...',
-          progress: 20,
-          timestamp: new Date().toISOString()
-        });
-
-        const backupResult = await pool.query(
-          `INSERT INTO aircraft_backup (backup_id, airline_code, airline_name, backup_reason, aircraft_data, fleet_size, created_by)
-           VALUES ($1, $2, $3, $4, $5, $6, $7)
-           RETURNING id`,
-          [
-            `backup_${airlineCode.toUpperCase()}_${Date.now()}`,
-            airlineCode.toUpperCase(),
-            airline.airline_name,
-            `Pre-scrape backup for job ${jobId}`,
-            '[]', // Empty array for now - will be populated by actual scraping
-            0, // No fleet size yet
-            createdBy || 'system'
-          ]
-        );
-        backupId = backupResult.rows[0]?.id;
-        logger.info(`Created backup ${backupId} for airline ${airlineCode}`);
-
-        // Emit: Backup complete
-        io.emit('scraping:progress', {
-          airlineCode: airlineCode.toUpperCase(),
-          jobId,
-          phase: 'backup_complete',
-          message: `Backup created successfully (ID: ${backupId})`,
-          progress: 30,
-          timestamp: new Date().toISOString()
-        });
-      } catch (backupError) {
-        logger.warn('Error creating backup (non-fatal)', { error: backupError });
-        io.emit('scraping:progress', {
-          airlineCode: airlineCode.toUpperCase(),
-          jobId,
-          phase: 'backup_failed',
-          message: 'Backup creation failed (continuing without backup)',
-          progress: 30,
-          timestamp: new Date().toISOString()
-        });
-        // Continue without backup - this is non-fatal
-      }
-    }
+    // Skip backup creation (aircraft_backup table doesn't exist in current schema)
+    // Emit: Skipping backup
+    io.emit('scraping:progress', {
+      airlineCode: airlineCode.toUpperCase(),
+      jobId,
+      phase: 'backup_skipped',
+      message: 'Skipping backup (not supported in current schema)',
+      progress: 30,
+      timestamp: new Date().toISOString()
+    });
 
     // Emit: Creating job
     io.emit('scraping:progress', {
@@ -287,27 +244,31 @@ router.post('/scraping/jobs', async (req, res) => {
       timestamp: new Date().toISOString()
     });
 
-    // Create scraping job
+    // Get airline ID from airlines table
+    const airlineIdResult = await pool.query(
+      'SELECT id FROM airlines WHERE iata_code = $1',
+      [airlineCode.toUpperCase()]
+    );
+
+    if (airlineIdResult.rows.length === 0) {
+      throw new Error(`Airline ${airlineCode.toUpperCase()} not found in airlines table`);
+    }
+
+    const airlineId = airlineIdResult.rows[0].id;
+
+    // Create scraping job using correct schema
     const insertQuery = `
-      INSERT INTO scraping_jobs (
-        job_id, airline_code, airline_name, job_type, status, priority,
-        backup_before_update, notify_on_complete, backup_id, created_by
+      INSERT INTO scrape_jobs (
+        airline_id, job_type, status
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      VALUES ($1, $2, $3)
       RETURNING *
     `;
 
     const result = await pool.query(insertQuery, [
-      jobId,
-      airlineCode.toUpperCase(),
-      airline.airline_name,
+      airlineId,
       jobType,
-      'pending',
-      priority,
-      backupBeforeUpdate,
-      notifyOnComplete,
-      backupId,
-      createdBy || 'system'
+      'pending'
     ]);
 
     // Emit: Job created
