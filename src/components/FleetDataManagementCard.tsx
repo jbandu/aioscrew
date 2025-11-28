@@ -36,7 +36,8 @@ const WS_URL = import.meta.env.VITE_WS_URL ||
 const AIRCRAFT_API_URL = import.meta.env.VITE_AIRCRAFT_API_URL ||
   (import.meta.env.DEV ? 'http://localhost:3000' : 'https://aircraft-database-mcp-production.up.railway.app');
 
-const AIRCRAFT_API_KEY = import.meta.env.VITE_AIRCRAFT_API_KEY || 'dev_key_12345';
+const AIRCRAFT_API_KEY = import.meta.env.VITE_AIRCRAFT_API_KEY ||
+  (import.meta.env.DEV ? 'dev_key_12345' : 'prod_3b0c2496dfb58aab0c1f534f92ce88e4ef74213cdf63cf046fbc2a0bf7fc2f5f');
 
 // Configure the fleet scraper client with the aircraft API URL and key
 configureFleetScraperClient(AIRCRAFT_API_URL, AIRCRAFT_API_KEY);
