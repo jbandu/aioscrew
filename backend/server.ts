@@ -120,14 +120,14 @@ io.on('connection', (socket) => {
   });
 });
 
-// Serve static frontend files from /public directory
-// In production (Docker), files are at /app/public
-// In development, they might be at ../dist or ../public
+// Serve static frontend files ONLY in production
+// In development, Vite dev server handles the frontend (port 5173)
+// In production (Railway), backend serves both API and built frontend (single service)
 const isProduction = process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT === 'production';
 
-let publicPath: string = '/app/public'; // Default fallback
-
 if (isProduction) {
+  let publicPath: string = '/app/public'; // Default fallback
+
   // Production: try multiple possible locations based on Dockerfile structure
   // Dockerfile copies frontend dist to /app/public
   const possiblePaths = [
@@ -136,7 +136,7 @@ if (isProduction) {
     path.join(__dirname, '..', 'public'), // Relative fallback
     path.join(__dirname, '..', 'dist'),   // Relative fallback
   ];
-  
+
   // Find the first path that exists and contains index.html
   for (const testPath of possiblePaths) {
     const indexPath = path.join(testPath, 'index.html');
@@ -145,52 +145,51 @@ if (isProduction) {
       break;
     }
   }
-} else {
-  // Development: try multiple possible locations
-  // __dirname is backend/dist, so go up to root, then into dist
-  publicPath = path.join(__dirname, '..', 'dist');
-  // Fallback to public if dist doesn't exist
-  if (!fs.existsSync(publicPath)) {
-    publicPath = path.join(__dirname, '..', 'public');
-  }
-}
 
-logger.info(`Serving static files from: ${publicPath}`);
-logger.debug(`__dirname: ${__dirname}`);
-logger.debug(`NODE_ENV: ${process.env.NODE_ENV || 'not set'}`);
-logger.debug(`RAILWAY_ENVIRONMENT: ${process.env.RAILWAY_ENVIRONMENT || 'not set'}`);
+  logger.info(`Serving static files from: ${publicPath}`);
 
-// Verify index.html exists
-const indexPath = path.join(publicPath, 'index.html');
-if (!fs.existsSync(indexPath)) {
-  logger.warn(`index.html not found at ${indexPath}`);
-  logger.warn(`Attempting to list directory contents of ${publicPath}:`);
-  try {
-    const files = fs.readdirSync(publicPath);
-    logger.warn(`Found files: ${files.join(', ')}`);
-  } catch (err) {
-    logger.error(`Could not read directory: ${err}`);
-  }
-}
-app.use(express.static(publicPath));
-
-// Catch-all route to serve index.html for client-side routing (SPA support)
-// This MUST come after API routes to ensure API endpoints are not overridden
-app.get('*', (req, res, next) => {
-  // Skip API routes and health check - let them fall through to 404 if not matched
-  if (req.path.startsWith('/api/') || req.path === '/health') {
-    return next();
-  }
-
-  // Serve index.html for all other routes (client-side routing)
+  // Verify index.html exists
   const indexPath = path.join(publicPath, 'index.html');
-  res.sendFile(indexPath, (err) => {
-    if (err) {
-      logger.error('Error serving index.html', { error: err, path: indexPath });
-      res.status(500).send('Error loading application');
+  if (!fs.existsSync(indexPath)) {
+    logger.warn(`index.html not found at ${indexPath}`);
+    logger.warn(`Attempting to list directory contents of ${publicPath}:`);
+    try {
+      const files = fs.readdirSync(publicPath);
+      logger.warn(`Found files: ${files.join(', ')}`);
+    } catch (err) {
+      logger.error(`Could not read directory: ${err}`);
     }
+  }
+
+  app.use(express.static(publicPath));
+
+  // Catch-all route to serve index.html for client-side routing (SPA support)
+  // This MUST come after API routes to ensure API endpoints are not overridden
+  app.get('*', (req, res, next) => {
+    // Skip API routes and health check - let them fall through to 404 if not matched
+    if (req.path.startsWith('/api/') || req.path === '/health') {
+      return next();
+    }
+
+    // Serve index.html for all other routes (client-side routing)
+    const indexPath = path.join(publicPath, 'index.html');
+    res.sendFile(indexPath, (err) => {
+      if (err) {
+        logger.error('Error serving index.html', { error: err, path: indexPath });
+        res.status(500).send('Error loading application');
+      }
+    });
   });
-});
+} else {
+  // Development mode: Backend is API-only
+  // Frontend is served by Vite dev server on port 5173 with hot-reload
+  logger.info('Development mode: Backend serving API only (frontend on port 5173)');
+  logger.debug(`__dirname: ${__dirname}`);
+  logger.debug(`NODE_ENV: ${process.env.NODE_ENV || 'not set'}`);
+
+  // No static file serving in development
+  // No catch-all route in development - API 404s will properly return 404
+}
 
 // Error handling middleware - must be after routes
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
