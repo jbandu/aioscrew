@@ -87,3 +87,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 
 # Start server - run node directly to avoid npm start issues
 CMD ["node", "dist/server.js"]
+# Force rebuild
