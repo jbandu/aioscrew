@@ -1174,4 +1174,49 @@ router.get('/settings/audit-log', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * POST /api/admin/claims
+ * Create a new pay claim
+ */
+router.post('/claims', async (req: Request, res: Response) => {
+  try {
+    const { crew_id, claim_type, trip_id, amount, description } = req.body;
+
+    const claimId = `CLM-${Date.now()}`;
+    const result = await pool.query(
+      `INSERT INTO pay_claims (
+        id, crew_id, claim_type, trip_id, amount,
+        claim_date, status, notes
+      ) VALUES ($1, $2, $3, $4, $5, CURRENT_DATE, 'pending', $6)
+      RETURNING *`,
+      [claimId, crew_id, claim_type, trip_id, amount, description]
+    );
+
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error('Error creating claim:', error);
+    res.status(500).json({ error: 'Failed to create claim' });
+  }
+});
+
+/**
+ * GET /api/admin/claims/crew/:crewId
+ * Get claims for a specific crew member
+ */
+router.get('/claims/crew/:crewId', async (req: Request, res: Response) => {
+  try {
+    const { crewId } = req.params;
+    const result = await pool.query(
+      `SELECT * FROM pay_claims
+       WHERE crew_id = $1
+       ORDER BY created_at DESC`,
+      [crewId]
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching crew claims:', error);
+    res.status(500).json({ error: 'Failed to fetch claims' });
+  }
+});
+
 export default router;

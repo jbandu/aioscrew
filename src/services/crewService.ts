@@ -1,13 +1,13 @@
-import { sql } from '../lib/db';
+import { crewMembers, trips } from '../data/mockData';
 import type { CrewMember, Trip, Claim } from '../types';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 export const crewService = {
   async getCurrentUser(): Promise<CrewMember | null> {
     try {
-      const result = await sql`
-        SELECT * FROM crew_members WHERE id = 'CM001' LIMIT 1
-      `;
-      return result[0] as CrewMember || null;
+      // Use mock data instead of database
+      return crewMembers[0] || null;
     } catch (error) {
       console.error('Error fetching current user:', error);
       return null;
@@ -16,15 +16,10 @@ export const crewService = {
 
   async getUserTrips(crewId: string): Promise<Trip[]> {
     try {
-      const result = await sql`
-        SELECT * FROM trips
-        WHERE captain_id = ${crewId}
-           OR first_officer_id = ${crewId}
-           OR senior_fa_id = ${crewId}
-           OR junior_fa_id = ${crewId}
-        ORDER BY trip_date DESC
-      `;
-      return result as Trip[];
+      // Use mock data and filter by crew member
+      return trips.filter(t =>
+        t.crewAssigned && t.crewAssigned.includes(crewId)
+      );
     } catch (error) {
       console.error('Error fetching user trips:', error);
       return [];
@@ -33,12 +28,10 @@ export const crewService = {
 
   async getUserClaims(crewId: string): Promise<Claim[]> {
     try {
-      const result = await sql`
-        SELECT * FROM pay_claims
-        WHERE crew_id = ${crewId}
-        ORDER BY created_at DESC
-      `;
-      return result as Claim[];
+      // Fetch from backend API
+      const response = await fetch(`${API_URL}/api/admin/claims/crew/${crewId}`);
+      if (!response.ok) throw new Error('Failed to fetch claims');
+      return await response.json();
     } catch (error) {
       console.error('Error fetching user claims:', error);
       return [];
@@ -47,20 +40,36 @@ export const crewService = {
 
   async submitClaim(claim: Omit<Claim, 'id'>): Promise<Claim | null> {
     try {
-      const claimId = `CLM-${Date.now()}`;
-      const result = await sql`
-        INSERT INTO pay_claims (
-          id, crew_id, claim_type, trip_id, claim_date, amount,
-          status, ai_validated, ai_explanation, contract_reference
-        )
-        VALUES (
-          ${claimId}, ${claim.crew_id}, ${claim.claim_type}, ${claim.trip_id},
-          ${claim.claim_date}, ${claim.amount}, ${claim.status},
-          ${claim.ai_validated}, ${claim.ai_explanation}, ${claim.contract_reference || 'CBA Section 12.4'}
-        )
-        RETURNING *
-      `;
-      return result[0] as Claim;
+      console.log('crewService.submitClaim called with:', claim);
+      console.log('API_URL:', API_URL);
+
+      const payload = {
+        crew_id: claim.crew_id,
+        claim_type: claim.claim_type,
+        trip_id: claim.trip_id,
+        amount: claim.amount,
+        description: claim.description || ''
+      };
+      console.log('Sending payload to backend:', payload);
+
+      // Call backend API to save to database
+      const response = await fetch(`${API_URL}/api/admin/claims`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      console.log('Response status:', response.status, response.statusText);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Backend error response:', errorText);
+        throw new Error(`Failed to submit claim: ${response.status} ${errorText}`);
+      }
+
+      const result = await response.json();
+      console.log('Backend returned:', result);
+      return result;
     } catch (error) {
       console.error('Error submitting claim:', error);
       return null;
@@ -69,12 +78,9 @@ export const crewService = {
 
   async getAllCrew(): Promise<CrewMember[]> {
     try {
-      const result = await sql`
-        SELECT * FROM crew_members
-        WHERE status = 'active'
-        ORDER BY seniority DESC
-      `;
-      return result as CrewMember[];
+      // Use mock data
+      return crewMembers.filter(c => c.status === 'active')
+        .sort((a, b) => b.seniority - a.seniority);
     } catch (error) {
       console.error('Error fetching all crew:', error);
       return [];
@@ -83,11 +89,8 @@ export const crewService = {
 
   async getAllTrips(): Promise<Trip[]> {
     try {
-      const result = await sql`
-        SELECT * FROM trips
-        ORDER BY trip_date DESC
-      `;
-      return result as Trip[];
+      // Use mock data
+      return trips.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     } catch (error) {
       console.error('Error fetching all trips:', error);
       return [];
@@ -96,13 +99,8 @@ export const crewService = {
 
   async getAllClaims(): Promise<Claim[]> {
     try {
-      const result = await sql`
-        SELECT c.*, m.name as crew_name
-        FROM pay_claims c
-        LEFT JOIN crew_members m ON c.crew_id = m.id
-        ORDER BY c.created_at DESC
-      `;
-      return result as any[];
+      // Use mock data - return empty for now
+      return [];
     } catch (error) {
       console.error('Error fetching all claims:', error);
       return [];
@@ -111,14 +109,7 @@ export const crewService = {
 
   async updateClaimStatus(claimId: string, status: string, reviewedBy?: string): Promise<boolean> {
     try {
-      await sql`
-        UPDATE pay_claims
-        SET status = ${status},
-            reviewed_by = ${reviewedBy || 'system'},
-            reviewed_at = CURRENT_TIMESTAMP,
-            updated_at = CURRENT_TIMESTAMP
-        WHERE id = ${claimId}
-      `;
+      // Mock implementation - just return success
       return true;
     } catch (error) {
       console.error('Error updating claim status:', error);
@@ -128,14 +119,8 @@ export const crewService = {
 
   async getDisruptions(): Promise<any[]> {
     try {
-      const result = await sql`
-        SELECT d.*, t.route, t.trip_date
-        FROM disruptions d
-        LEFT JOIN trips t ON d.trip_id = t.id
-        WHERE d.resolution_status != 'resolved'
-        ORDER BY d.created_at DESC
-      `;
-      return result as any[];
+      // Mock data - return empty for now
+      return [];
     } catch (error) {
       console.error('Error fetching disruptions:', error);
       return [];
@@ -144,15 +129,8 @@ export const crewService = {
 
   async getViolations(): Promise<any[]> {
     try {
-      const result = await sql`
-        SELECT v.*, m.name as crew_name, t.route
-        FROM compliance_violations v
-        LEFT JOIN crew_members m ON v.crew_id = m.id
-        LEFT JOIN trips t ON v.trip_id = t.id
-        WHERE v.status != 'resolved'
-        ORDER BY v.detected_at DESC
-      `;
-      return result as any[];
+      // Mock data - return empty for now
+      return [];
     } catch (error) {
       console.error('Error fetching violations:', error);
       return [];

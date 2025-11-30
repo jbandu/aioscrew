@@ -45,9 +45,13 @@ export default function CrewMemberViewComplete({ activeView, onViewChange }: Cre
   };
 
   const handleSubmitClaim = async (claim: Omit<Claim, 'id'>) => {
+    console.log('handleSubmitClaim called with:', claim);
     const result = await crewService.submitClaim(claim);
+    console.log('submitClaim result:', result);
     if (result) {
       await loadData();
+    } else {
+      console.error('submitClaim returned null or undefined');
     }
   };
 

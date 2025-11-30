@@ -27,9 +27,15 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const httpServer = createServer(app);
+
+// CORS configuration - allow all localhost ports in development
+const corsOrigin = process.env.NODE_ENV === 'production'
+  ? process.env.FRONTEND_URL || 'http://localhost:5173'
+  : /^http:\/\/localhost:\d+$/;
+
 const io = new SocketIOServer(httpServer, {
   cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: corsOrigin,
     credentials: true
   }
 });
@@ -64,7 +70,7 @@ app.get('/api/version', (req, res) => {
 
 // Middleware
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: corsOrigin,
   credentials: true
 }));
 
