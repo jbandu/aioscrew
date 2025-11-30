@@ -20,6 +20,7 @@ import crewSchedulingRoutes from './api/routes/crew-scheduling.js';
 import testLabRoutes from './api/routes/test-lab.js';
 import fleetRoutes from './api/routes/fleet.js';
 import fleetScraperRoutes from './api/routes/fleet-scraper.js';
+import proactiveClaimsRoutes from './api/routes/proactive-claims.js';
 import logger, { logRequest } from './utils/logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -44,6 +45,9 @@ const PORT = parseInt(process.env.PORT || '3001', 10);
 
 // Export io for use in other modules
 export { io };
+
+// Make io globally available for services (like trip-completion-monitor)
+global.io = io;
 
 // Health check endpoint FIRST - before any middleware that could block it
 app.get('/health', (req, res) => {
@@ -104,6 +108,7 @@ app.use('/api/crew-scheduling', crewSchedulingRoutes);
 app.use('/api/test-lab', testLabRoutes);
 app.use('/api/fleet', fleetRoutes);
 app.use('/api/v1', fleetScraperRoutes);
+app.use('/api/proactive-claims', proactiveClaimsRoutes);
 
 // WebSocket connection handling
 io.on('connection', (socket) => {
