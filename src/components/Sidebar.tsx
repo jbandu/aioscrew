@@ -1,4 +1,4 @@
-import { Home, Calendar, Users, DollarSign, BarChart3, FileText, Settings, Upload, MessageSquare, AlertTriangle, Shield } from 'lucide-react';
+import { Home, Calendar, Users, DollarSign, BarChart3, FileText, Settings, Upload, MessageSquare, AlertTriangle, Shield, Sparkles } from 'lucide-react';
 import { UserRole } from '../types';
 
 interface SidebarProps {
@@ -41,6 +41,7 @@ const sidebarMenus: Record<UserRole, Array<{ icon: any; label: string; view: str
   'payroll': [
     { icon: Home, label: 'Payroll Dashboard', view: 'dashboard' },
     { icon: FileText, label: 'Claims Review', view: 'claims' },
+    { icon: Sparkles, label: 'Proactive Claims', view: 'proactive-claims' },
     { icon: AlertTriangle, label: 'Excess Payments', view: 'excess-payments' },
     { icon: DollarSign, label: 'Payments', view: 'payments' },
     { icon: BarChart3, label: 'Reports', view: 'reports' },

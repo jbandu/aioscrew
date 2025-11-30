@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import ClaimsReviewDashboard from '../components/admin/ClaimsReviewDashboard';
 import ExcessPaymentReview from '../components/admin/ExcessPaymentReview';
+import ProactiveClaimsDashboard from '../components/payroll/ProactiveClaimsDashboard';
 
 interface PayrollViewImprovedProps {
   activeView?: string;
@@ -10,6 +11,10 @@ export default function PayrollViewImproved({ activeView = 'claims' }: PayrollVi
   // Route to appropriate submenu based on activeView
   if (activeView === 'claims') {
     return <ClaimsReviewDashboard />;
+  }
+
+  if (activeView === 'proactive-claims') {
+    return <ProactiveClaimsDashboard />;
   }
 
   if (activeView === 'excess-payments') {
