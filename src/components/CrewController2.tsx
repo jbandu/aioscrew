@@ -18,6 +18,7 @@ interface ChatMessage {
 
 const CrewController2: React.FC = () => {
   const [activeVisualization, setActiveVisualization] = useState<VisualizationType>(null);
+  const [dataMode, setDataMode] = useState<'mock' | 'live'>('mock');
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     {
       role: 'ai',
@@ -25,6 +26,25 @@ const CrewController2: React.FC = () => {
     }
   ]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  // Handle data mode changes
+  React.useEffect(() => {
+    if (dataMode === 'live') {
+      setChatMessages(prev => [...prev, {
+        role: 'ai',
+        content: '**Switched to Live Data Mode**\n\nNow connecting to PostgreSQL database on Railway...\n\n⚠️ Note: Backend API integration is in progress. Currently showing mock data with database schema ready for:\n\n• Weather exposure queries\n• Crew duty time tracking\n• Disruption analysis\n• Reserve crew availability\n• Historical comparisons\n• Root cause analytics\n\nSee `CREW_CONTROLLER_2_DATABASE_MAPPING.md` for details.'
+      }]);
+    } else {
+      // Reset to initial greeting when switching back to mock
+      if (chatMessages.length > 1) {
+        setChatMessages([{
+          role: 'ai',
+          content: 'Good morning, Controller. I\'m monitoring **187 flights** and **412 crew members** across your network.\n\nSelect a question below to explore specific operational insights, or ask me anything about your operation.'
+        }]);
+        setActiveVisualization(null);
+      }
+    }
+  }, [dataMode]);
 
   const handleQuestionClick = (question: typeof suggestedQuestions[0]) => {
     // Add user question to chat
@@ -84,21 +104,70 @@ const CrewController2: React.FC = () => {
         background: 'white',
         boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '10px',
+              background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '20px',
+              color: 'white'
+            }}>✦</div>
+            <div>
+              <div style={{ fontWeight: '700', fontSize: '18px', color: '#1e293b' }}>Crew Controller 2.0</div>
+              <div style={{ fontSize: '12px', color: '#64748b' }}>AI-Powered Operations Intelligence • Copa Airlines</div>
+            </div>
+          </div>
+
+          {/* Data Mode Toggle */}
           <div style={{
-            width: '40px',
-            height: '40px',
-            borderRadius: '10px',
-            background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '20px',
-            color: 'white'
-          }}>✦</div>
-          <div>
-            <div style={{ fontWeight: '700', fontSize: '18px', color: '#1e293b' }}>Crew Controller 2.0</div>
-            <div style={{ fontSize: '12px', color: '#64748b' }}>AI-Powered Operations Intelligence • Copa Airlines</div>
+            gap: '12px',
+            padding: '8px 16px',
+            borderRadius: '8px',
+            background: '#f8fafc',
+            border: '1px solid #e2e8f0'
+          }}>
+            <span style={{
+              fontSize: '12px',
+              fontWeight: '600',
+              color: dataMode === 'mock' ? '#3b82f6' : '#94a3b8'
+            }}>Mock Data</span>
+            <button
+              onClick={() => setDataMode(dataMode === 'mock' ? 'live' : 'mock')}
+              style={{
+                width: '44px',
+                height: '24px',
+                borderRadius: '12px',
+                background: dataMode === 'live' ? '#10b981' : '#cbd5e1',
+                border: 'none',
+                cursor: 'pointer',
+                position: 'relative',
+                transition: 'background 0.2s'
+              }}
+            >
+              <div style={{
+                width: '20px',
+                height: '20px',
+                borderRadius: '50%',
+                background: 'white',
+                position: 'absolute',
+                top: '2px',
+                left: dataMode === 'live' ? '22px' : '2px',
+                transition: 'left 0.2s',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+              }} />
+            </button>
+            <span style={{
+              fontSize: '12px',
+              fontWeight: '600',
+              color: dataMode === 'live' ? '#10b981' : '#94a3b8'
+            }}>Live Data</span>
           </div>
         </div>
       </header>
@@ -132,9 +201,20 @@ const CrewController2: React.FC = () => {
             }}>
               <span style={{ fontSize: '16px' }}>🤖</span>
             </div>
-            <div>
+            <div style={{ flex: 1 }}>
               <div style={{ fontWeight: '600', fontSize: '14px', color: '#1e293b' }}>Operations AI</div>
               <div style={{ fontSize: '11px', color: '#10b981' }}>● Active • Monitoring 187 flights</div>
+            </div>
+            <div style={{
+              padding: '4px 8px',
+              borderRadius: '6px',
+              background: dataMode === 'live' ? '#dcfce7' : '#dbeafe',
+              border: `1px solid ${dataMode === 'live' ? '#86efac' : '#93c5fd'}`,
+              fontSize: '10px',
+              fontWeight: '600',
+              color: dataMode === 'live' ? '#166534' : '#1e40af'
+            }}>
+              {dataMode === 'live' ? '🔴 LIVE' : '📋 MOCK'}
             </div>
           </div>
 
