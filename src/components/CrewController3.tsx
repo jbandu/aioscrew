@@ -563,7 +563,7 @@ const CrewController3: React.FC = () => {
           >
             <ArrowLeft size={20} />
           </button>
-          <h1 style={{ fontSize: '18px', fontWeight: 600' }}>Crew Controller 3.0</h1>
+          <h1 style={{ fontSize: '18px', fontWeight: '600' }}>Crew Controller 3.0</h1>
           <div style={{ fontSize: '13px', color: '#9ca3af' }}>Gantt Timeline Interface</div>
         </div>
 
