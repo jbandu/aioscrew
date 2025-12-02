@@ -7,6 +7,7 @@ import FleetManagementPage from './FleetManagementPage';
 import FleetDataManagementPage from '../pages/FleetDataManagementPage';
 import CrewController2 from './CrewController2';
 import CrewController3 from './CrewController3';
+import CrewController4 from './CrewController4';
 
 interface LandingPageProps {
   onSelectRole: (role: UserRole) => void;
@@ -113,6 +114,7 @@ export default function LandingPage({ onSelectRole }: LandingPageProps) {
   const [showFleetDataManagement, setShowFleetDataManagement] = useState(false);
   const [showCrewController2, setShowCrewController2] = useState(false);
   const [showCrewController3, setShowCrewController3] = useState(false);
+  const [showCrewController4, setShowCrewController4] = useState(false);
 
   // If showing test generator 2.0, render it full screen
   if (showTestGenerator2) {
@@ -142,6 +144,11 @@ export default function LandingPage({ onSelectRole }: LandingPageProps) {
   // If showing crew controller 3.0, render it full screen
   if (showCrewController3) {
     return <CrewController3 />;
+  }
+
+  // If showing crew controller 4.0, render it full screen
+  if (showCrewController4) {
+    return <CrewController4 />;
   }
 
   return (
@@ -266,6 +273,42 @@ export default function LandingPage({ onSelectRole }: LandingPageProps) {
               </ul>
               <div className="w-full bg-gradient-to-r from-orange-500 to-red-600 border border-white/10 text-white/90 py-3 rounded-lg hover:opacity-90 transition-opacity font-semibold text-center">
                 Launch Gantt View
+              </div>
+            </div>
+          </button>
+
+          {/* Crew Controller 4.0 Card */}
+          <button
+            onClick={() => setShowCrewController4(true)}
+            className="bg-slate-900/60 border border-fuchsia-500/30 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 text-left overflow-hidden backdrop-blur"
+          >
+            <div className="relative bg-gradient-to-br from-fuchsia-900 via-purple-900 to-slate-900 p-6">
+              <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.3),_transparent_45%)]" />
+              <BarChart3 className="relative w-12 h-12 text-white mb-3" />
+              <h3 className="relative text-xl font-bold text-white">Crew Controller 4.0</h3>
+              <p className="relative text-white/80 text-sm">Interactive Charts Dashboard</p>
+            </div>
+            <div className="p-6 bg-slate-950/40">
+              <ul className="space-y-2 text-sm text-slate-200 mb-6">
+                <li className="flex items-start">
+                  <span className="text-emerald-300 mr-2">✓</span>
+                  7 interactive chart visualizations
+                </li>
+                <li className="flex items-start">
+                  <span className="text-emerald-300 mr-2">✓</span>
+                  Crew utilization donut & bar charts
+                </li>
+                <li className="flex items-start">
+                  <span className="text-emerald-300 mr-2">✓</span>
+                  Cost comparison & fatigue heatmaps
+                </li>
+                <li className="flex items-start">
+                  <span className="text-emerald-300 mr-2">✓</span>
+                  Performance trends & reserve coverage
+                </li>
+              </ul>
+              <div className="w-full bg-gradient-to-r from-fuchsia-500 to-purple-600 border border-white/10 text-white/90 py-3 rounded-lg hover:opacity-90 transition-opacity font-semibold text-center">
+                Explore Interactive Charts
               </div>
             </div>
           </button>
