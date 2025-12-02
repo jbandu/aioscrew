@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Plane, Calendar, Target, DollarSign, BarChart3, Scale, Building2, Sparkles, FlaskConical, Warehouse, Database, Zap } from 'lucide-react';
+import { Plane, Calendar, Target, DollarSign, BarChart3, Scale, Building2, Sparkles, FlaskConical, Warehouse, Database, Zap, Activity } from 'lucide-react';
 import { UserRole } from '../types';
 import TestGenerator2Page from './TestGenerator2Page';
 import TestLabPage from './TestLabPage';
 import FleetManagementPage from './FleetManagementPage';
 import FleetDataManagementPage from '../pages/FleetDataManagementPage';
 import CrewController2 from './CrewController2';
+import CrewController3 from './CrewController3';
 
 interface LandingPageProps {
   onSelectRole: (role: UserRole) => void;
@@ -124,6 +125,7 @@ export default function LandingPage({ onSelectRole }: LandingPageProps) {
   const [showFleetManagement, setShowFleetManagement] = useState(false);
   const [showFleetDataManagement, setShowFleetDataManagement] = useState(false);
   const [showCrewController2, setShowCrewController2] = useState(false);
+  const [showCrewController3, setShowCrewController3] = useState(false);
 
   // If showing test generator 2.0, render it full screen
   if (showTestGenerator2) {
@@ -148,6 +150,11 @@ export default function LandingPage({ onSelectRole }: LandingPageProps) {
   // If showing crew controller 2.0, render it full screen
   if (showCrewController2) {
     return <CrewController2 />;
+  }
+
+  // If showing crew controller 3.0, render it full screen
+  if (showCrewController3) {
+    return <CrewController3 />;
   }
 
   return (
@@ -202,6 +209,78 @@ export default function LandingPage({ onSelectRole }: LandingPageProps) {
                 </button>
               );
             })}
+
+            {/* Crew Controller 2.0 Card */}
+            <button
+              onClick={() => setShowCrewController2(true)}
+              className="bg-slate-900/60 border border-violet-500/30 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 text-left overflow-hidden backdrop-blur"
+            >
+              <div className="relative bg-gradient-to-br from-violet-900 via-purple-900 to-slate-900 p-6">
+                <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.3),_transparent_45%)]" />
+                <Zap className="relative w-12 h-12 text-white mb-3" />
+                <h3 className="relative text-xl font-bold text-white">Crew Controller 2.0</h3>
+                <p className="relative text-white/80 text-sm">AI-Powered Operations Intelligence</p>
+              </div>
+              <div className="p-6 bg-slate-950/40">
+                <ul className="space-y-2 text-sm text-slate-200 mb-6">
+                  <li className="flex items-start">
+                    <span className="text-emerald-300 mr-2">✓</span>
+                    6 interactive scenario visualizations
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-emerald-300 mr-2">✓</span>
+                    Weather exposure & crew fatigue analysis
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-emerald-300 mr-2">✓</span>
+                    Reserve coverage maps & day comparisons
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-emerald-300 mr-2">✓</span>
+                    Root cause analytics & AI insights
+                  </li>
+                </ul>
+                <div className="w-full bg-gradient-to-r from-violet-500 to-purple-600 border border-white/10 text-white/90 py-3 rounded-lg hover:opacity-90 transition-opacity font-semibold text-center">
+                  Explore AI Intelligence
+                </div>
+              </div>
+            </button>
+
+            {/* Crew Controller 3.0 Card */}
+            <button
+              onClick={() => setShowCrewController3(true)}
+              className="bg-slate-900/60 border border-orange-500/30 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 text-left overflow-hidden backdrop-blur"
+            >
+              <div className="relative bg-gradient-to-br from-orange-900 via-red-900 to-slate-900 p-6">
+                <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.3),_transparent_45%)]" />
+                <Activity className="relative w-12 h-12 text-white mb-3" />
+                <h3 className="relative text-xl font-bold text-white">Crew Controller 3.0</h3>
+                <p className="relative text-white/80 text-sm">Gantt Timeline Interface</p>
+              </div>
+              <div className="p-6 bg-slate-950/40">
+                <ul className="space-y-2 text-sm text-slate-200 mb-6">
+                  <li className="flex items-start">
+                    <span className="text-emerald-300 mr-2">✓</span>
+                    Real-time Gantt timeline view
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-emerald-300 mr-2">✓</span>
+                    Color-coded crew duty status
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-emerald-300 mr-2">✓</span>
+                    Active alerts panel with urgency sorting
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-emerald-300 mr-2">✓</span>
+                    Traditional controller workflow + AI
+                  </li>
+                </ul>
+                <div className="w-full bg-gradient-to-r from-orange-500 to-red-600 border border-white/10 text-white/90 py-3 rounded-lg hover:opacity-90 transition-opacity font-semibold text-center">
+                  Launch Gantt View
+                </div>
+              </div>
+            </button>
 
             {/* Test Generator 2.0 Card */}
             <button
@@ -339,42 +418,6 @@ export default function LandingPage({ onSelectRole }: LandingPageProps) {
                 </ul>
                 <div className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 border border-white/10 text-white/90 py-3 rounded-lg hover:opacity-90 transition-opacity font-semibold text-center">
                   Manage Fleet Data
-                </div>
-              </div>
-            </button>
-
-            {/* Crew Controller 2.0 Card */}
-            <button
-              onClick={() => setShowCrewController2(true)}
-              className="bg-slate-900/60 border border-violet-500/30 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 text-left overflow-hidden backdrop-blur"
-            >
-              <div className="relative bg-gradient-to-br from-violet-900 via-purple-900 to-slate-900 p-6">
-                <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.3),_transparent_45%)]" />
-                <Zap className="relative w-12 h-12 text-white mb-3" />
-                <h3 className="relative text-xl font-bold text-white">Crew Controller 2.0</h3>
-                <p className="relative text-white/80 text-sm">AI-Powered Operations Intelligence</p>
-              </div>
-              <div className="p-6 bg-slate-950/40">
-                <ul className="space-y-2 text-sm text-slate-200 mb-6">
-                  <li className="flex items-start">
-                    <span className="text-emerald-300 mr-2">✓</span>
-                    6 interactive scenario visualizations
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-emerald-300 mr-2">✓</span>
-                    Weather exposure & crew fatigue analysis
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-emerald-300 mr-2">✓</span>
-                    Reserve coverage maps & day comparisons
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-emerald-300 mr-2">✓</span>
-                    Root cause analytics & AI insights
-                  </li>
-                </ul>
-                <div className="w-full bg-gradient-to-r from-violet-500 to-purple-600 border border-white/10 text-white/90 py-3 rounded-lg hover:opacity-90 transition-opacity font-semibold text-center">
-                  Explore AI Intelligence
                 </div>
               </div>
             </button>
