@@ -8,6 +8,7 @@ Comprehensive end-to-end testing suite for the Aioscrew AI-powered crew manageme
 - [Test Structure](#test-structure)
 - [Getting Started](#getting-started)
 - [Running Tests](#running-tests)
+- [Demo Scripts](#demo-scripts)
 - [Test Scenarios](#test-scenarios)
 - [CI/CD Integration](#cicd-integration)
 - [Writing New Tests](#writing-new-tests)
@@ -46,11 +47,23 @@ tests/
 │   │   └── base.ts              # Custom Playwright fixtures
 │   ├── helpers/
 │   │   └── test-data.ts         # Test data and selectors
+│   ├── demo/                    # Demo scripts for presentations
+│   │   ├── demo-fixtures.ts     # Demo-specific fixtures
+│   │   ├── narration-data.ts    # TTS scripts and metadata
+│   │   ├── landing-page.demo.ts # Landing page demo
+│   │   ├── ai-validation.demo.ts # AI validation demo ⭐
+│   │   ├── crew-member.demo.ts  # Crew member demo
+│   │   ├── controller.demo.ts   # Controller demo
+│   │   ├── full-platform-tour.demo.ts # Complete tour
+│   │   └── index.ts             # Module exports
 │   ├── smoke.spec.ts            # Quick smoke tests
-│   ├── payroll-admin.spec.ts   # Payroll admin dashboard tests
-│   ├── crew-member.spec.ts     # Crew member dashboard tests
-│   ├── role-access.spec.ts     # Role-based access tests
-│   └── api.spec.ts              # API integration tests
+│   ├── payroll-admin.spec.ts    # Payroll admin dashboard tests
+│   ├── crew-member.spec.ts      # Crew member dashboard tests
+│   ├── role-access.spec.ts      # Role-based access tests
+│   ├── api.spec.ts              # API integration tests
+│   ├── integration.spec.ts      # Full integration tests
+│   ├── claim-submission-full.spec.ts # Claim workflow tests
+│   └── fleet-monitoring.spec.ts # Fleet monitoring tests
 └── README.md                    # This file
 ```
 
@@ -145,6 +158,70 @@ npm run test:webkit
 ```bash
 npm run test:report
 ```
+
+## 🎬 Demo Scripts
+
+The `tests/e2e/demo/` directory contains specialized Playwright scripts designed for:
+- **Live demonstrations** with AI-narrated audio
+- **Demo-pilot integration** with Eleven Labs TTS
+- **Video capture** for marketing materials
+- **Investor presentations** and sales demos
+
+### Demo Structure
+
+```
+tests/e2e/demo/
+├── demo-fixtures.ts          # Custom fixtures with narration support
+├── narration-data.ts         # TTS scripts and scenario metadata
+├── landing-page.demo.ts      # Landing page showcase (60s)
+├── ai-validation.demo.ts     # AI validation showcase (120s) ⭐
+├── crew-member.demo.ts       # Crew member experience (90s)
+├── controller.demo.ts        # Operations controller (90s)
+├── full-platform-tour.demo.ts # Complete tour (300s)
+└── index.ts                  # Module exports
+```
+
+### Running Demo Scripts
+
+```bash
+# Full platform tour (5-6 minutes)
+npx playwright test full-platform-tour.demo.ts --headed
+
+# AI Validation showcase (MAIN DEMO)
+npx playwright test ai-validation.demo.ts --headed
+
+# Quick overview (2 minutes)
+npx playwright test full-platform-tour.demo.ts --headed -g "Quick Platform Overview"
+
+# All demos in sequence
+npx playwright test tests/e2e/demo/*.demo.ts --headed
+```
+
+### Demo-Pilot Integration
+
+Demo scripts emit events for synchronization with TTS:
+
+```typescript
+// Events emitted by demos
+'demo:start'           // Demo started
+'step:narration'       // Text ready for TTS
+'ai:validation:start'  // AI validation triggered
+'screenshot'           // Screenshot captured
+'demo:complete'        // Demo finished
+```
+
+See [DEMO_PILOT_INTEGRATION.md](../DEMO_PILOT_INTEGRATION.md) for full integration guide.
+
+### Demo Scenarios
+
+| Scenario | Duration | Description |
+|----------|----------|-------------|
+| `landing-page` | 60s | Landing page and role overview |
+| `ai-validation` | 120s | Multi-agent AI validation ⭐ |
+| `crew-member` | 90s | Crew member portal |
+| `controller` | 90s | Operations control center |
+| `executive` | 60s | Executive dashboard |
+| `full-tour` | 300s | Complete platform tour |
 
 ## 📊 Test Scenarios
 
