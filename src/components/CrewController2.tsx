@@ -6,10 +6,12 @@ import {
   reserveCoverageData,
   dayComparisonData,
   rootCauseData,
+  shiftReportData,
   suggestedQuestions
 } from '../data/crewController2MockData';
+import ShiftReport from './ShiftReport';
 
-type VisualizationType = 'WeatherExposure' | 'FatigueHeatmap' | 'PassengerImpact' | 'ReserveCoverage' | 'DayComparison' | 'RootCauseTree' | null;
+type VisualizationType = 'WeatherExposure' | 'FatigueHeatmap' | 'PassengerImpact' | 'ReserveCoverage' | 'DayComparison' | 'RootCauseTree' | 'ShiftReport' | null;
 
 interface ChatMessage {
   role: 'ai' | 'user';
@@ -364,6 +366,10 @@ const CrewController2: React.FC = () => {
 
           {activeVisualization === 'RootCauseTree' && (
             <RootCauseTreeViz data={rootCauseData} />
+          )}
+
+          {activeVisualization === 'ShiftReport' && (
+            <ShiftReport data={shiftReportData} />
           )}
         </div>
       </div>

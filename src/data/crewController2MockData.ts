@@ -277,6 +277,65 @@ export const rootCauseData = {
   }
 };
 
+export const shiftReportData = {
+  score: 87,
+  controller: 'Ilango',
+  date: 'December 1, 2025',
+  shift: 'Day Shift (06:00 - 14:00)',
+
+  metrics: [
+    { icon: '⚡', value: '23 min', label: 'Avg Response', subtext: 'vs 45 min target' },
+    { icon: '💰', value: '$127K', label: 'Cost Avoided', subtext: 'vs similar disruptions' },
+    { icon: '✓', value: '4', label: 'Decisions', subtext: '0 escalations' },
+    { icon: '🤖', value: '83%', label: 'AI Alignment', subtext: '5/6 accepted' }
+  ],
+
+  learningMoment: {
+    flight: 'CM 801',
+    humanAction: 'chose crew with Lima familiarity over my suggestion',
+    result: 'saved 12 minutes on turnaround',
+    aiFeedback: "I've updated my model. Future Lima operations will weight station experience higher."
+  },
+
+  achievements: [
+    { icon: '🏆', label: 'Zero Escalations', detail: '5 shifts in a row' },
+    { icon: '⚡', label: 'Speed Demon', detail: 'All resolutions under 30 min' }
+  ],
+
+  handoff: {
+    outgoing: { name: 'Ilango', startTime: '06:00', endTime: '14:00', resolved: 3 },
+    incoming: { name: 'Maria', startTime: '14:00', endTime: '22:00', active: 1 },
+
+    openItems: [{
+      type: 'monitor' as const,
+      flight: 'CM 487',
+      route: 'PTY → BOG',
+      issue: 'BOG afternoon thunderstorms forecasted for 14:00-17:00 window',
+      actionTaken: 'Reserve F/O Moreno on standby at PTY. Monitoring weather updates.',
+      decisionPoint: '15:30',
+      priority: 'medium' as const
+    }],
+
+    watchItems: [
+      { type: 'action' as const, label: 'BOG Weather Decision', detail: 'Pre-position reserve if forecast worsens', due: '15:00' },
+      { type: 'fyi' as const, label: 'F/O Vega Available', detail: 'Back from rest, available tomorrow 05:00 LIM base' }
+    ],
+
+    resolvedItems: [
+      { flight: 'CM 208', action: 'Crew reassignment (Capt. Santos)', time: '09:02', outcome: 'On-time departure' },
+      { flight: 'CM 135', action: 'Proactive reposition via CM 305', time: '10:15', outcome: 'Avoided delay' },
+      { flight: 'CM 801', action: 'Schedule adjustment + Lima crew', time: '11:30', outcome: '12min saved' }
+    ],
+
+    checklist: [
+      { label: 'Open situations reviewed', checked: true },
+      { label: 'Watch items acknowledged', checked: true },
+      { label: 'Crew status shared', checked: true },
+      { label: 'Maria confirms ready', checked: false }
+    ]
+  }
+};
+
 export const suggestedQuestions = [
   {
     id: 'weather',
@@ -319,5 +378,12 @@ export const suggestedQuestions = [
     short: 'Root Cause',
     full: 'What caused our Miami delays last week?',
     visualization: 'RootCauseTree'
+  },
+  {
+    id: 'shiftreport',
+    icon: '📋',
+    short: 'Shift Report',
+    full: 'Show my shift performance report and handoff briefing',
+    visualization: 'ShiftReport'
   }
 ];
