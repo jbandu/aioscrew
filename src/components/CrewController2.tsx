@@ -218,53 +218,10 @@ const CrewController2: React.FC = () => {
             </div>
           </div>
 
-          {/* Chat Messages */}
-          <div style={{
-            flex: 1,
-            overflowY: 'auto',
-            padding: '20px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '16px'
-          }}>
-            {chatMessages.map((msg, idx) => (
-              <div key={idx} style={{
-                padding: '14px 16px',
-                borderRadius: '12px',
-                background: msg.role === 'ai' ? '#f1f5f9' : '#dbeafe',
-                border: `1px solid ${msg.role === 'ai' ? '#e2e8f0' : '#93c5fd'}`,
-                fontSize: '13px',
-                lineHeight: '1.6',
-                color: '#1e293b'
-              }}>
-                <div style={{ whiteSpace: 'pre-wrap' }} dangerouslySetInnerHTML={{
-                  __html: formatContent(msg.content)
-                }} />
-              </div>
-            ))}
-            {isAnalyzing && (
-              <div style={{
-                padding: '14px 16px',
-                borderRadius: '12px',
-                background: '#f1f5f9',
-                border: '1px solid #e2e8f0',
-                fontSize: '13px',
-                color: '#64748b'
-              }}>
-                <span style={{ opacity: 0.7 }}>Analyzing data...</span>
-                <span style={{
-                  display: 'inline-block',
-                  animation: 'pulse 1s infinite',
-                  marginLeft: '4px'
-                }}>●</span>
-              </div>
-            )}
-          </div>
-
-          {/* Suggested Questions */}
+          {/* Suggested Questions - NOW AT TOP */}
           <div style={{
             padding: '20px',
-            borderTop: '1px solid rgba(0,0,0,0.1)',
+            borderBottom: '1px solid rgba(0,0,0,0.1)',
             background: '#f8fafc'
           }}>
             <div style={{ fontSize: '12px', fontWeight: '600', color: '#64748b', marginBottom: '12px' }}>
@@ -303,6 +260,52 @@ const CrewController2: React.FC = () => {
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Chat History - NOW BELOW QUESTIONS */}
+          <div style={{
+            flex: 1,
+            overflowY: 'auto',
+            padding: '20px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px'
+          }}>
+            <div style={{ fontSize: '12px', fontWeight: '600', color: '#64748b', marginBottom: '8px' }}>
+              CONVERSATION HISTORY
+            </div>
+            {chatMessages.map((msg, idx) => (
+              <div key={idx} style={{
+                padding: '14px 16px',
+                borderRadius: '12px',
+                background: msg.role === 'ai' ? '#f1f5f9' : '#dbeafe',
+                border: `1px solid ${msg.role === 'ai' ? '#e2e8f0' : '#93c5fd'}`,
+                fontSize: '13px',
+                lineHeight: '1.6',
+                color: '#1e293b'
+              }}>
+                <div style={{ whiteSpace: 'pre-wrap' }} dangerouslySetInnerHTML={{
+                  __html: formatContent(msg.content)
+                }} />
+              </div>
+            ))}
+            {isAnalyzing && (
+              <div style={{
+                padding: '14px 16px',
+                borderRadius: '12px',
+                background: '#f1f5f9',
+                border: '1px solid #e2e8f0',
+                fontSize: '13px',
+                color: '#64748b'
+              }}>
+                <span style={{ opacity: 0.7 }}>Analyzing data...</span>
+                <span style={{
+                  display: 'inline-block',
+                  animation: 'pulse 1s infinite',
+                  marginLeft: '4px'
+                }}>●</span>
+              </div>
+            )}
           </div>
         </div>
 
