@@ -29,20 +29,23 @@ const CrewController2: React.FC = () => {
 
   // Handle data mode changes
   React.useEffect(() => {
+    console.log('Data mode changed to:', dataMode);
     if (dataMode === 'live') {
       setChatMessages(prev => [...prev, {
         role: 'ai',
-        content: '**Switched to Live Data Mode**\n\nNow connecting to PostgreSQL database on Railway...\n\n⚠️ Note: Backend API integration is in progress. Currently showing mock data with database schema ready for:\n\n• Weather exposure queries\n• Crew duty time tracking\n• Disruption analysis\n• Reserve crew availability\n• Historical comparisons\n• Root cause analytics\n\nSee `CREW_CONTROLLER_2_DATABASE_MAPPING.md` for details.'
+        content: '**Switched to Live Data Mode** 🔴\n\nNow connecting to PostgreSQL database on Railway...\n\n⚠️ Note: Backend API integration is in progress. Currently showing mock data with database schema ready for:\n\n• Weather exposure queries\n• Crew duty time tracking\n• Disruption analysis\n• Reserve crew availability\n• Historical comparisons\n• Root cause analytics\n\nSee `CREW_CONTROLLER_2_DATABASE_MAPPING.md` for details.'
       }]);
-    } else {
-      // Reset to initial greeting when switching back to mock
-      if (chatMessages.length > 1) {
-        setChatMessages([{
-          role: 'ai',
-          content: 'Good morning, Controller. I\'m monitoring **187 flights** and **412 crew members** across your network.\n\nSelect a question below to explore specific operational insights, or ask me anything about your operation.'
-        }]);
-        setActiveVisualization(null);
-      }
+    } else if (dataMode === 'mock') {
+      // Add a message when switching back to mock (only if not initial load)
+      setChatMessages(prev => {
+        if (prev.length > 1 && prev[prev.length - 1].content.includes('Live Data Mode')) {
+          return [...prev, {
+            role: 'ai',
+            content: '**Switched back to Mock Data Mode** 📋\n\nNow using demonstration data for all scenarios.'
+          }];
+        }
+        return prev;
+      });
     }
   }, [dataMode]);
 
@@ -139,7 +142,11 @@ const CrewController2: React.FC = () => {
               color: dataMode === 'mock' ? '#3b82f6' : '#94a3b8'
             }}>Mock Data</span>
             <button
-              onClick={() => setDataMode(dataMode === 'mock' ? 'live' : 'mock')}
+              onClick={() => {
+                const newMode = dataMode === 'mock' ? 'live' : 'mock';
+                console.log('Toggle clicked! Switching from', dataMode, 'to', newMode);
+                setDataMode(newMode);
+              }}
               style={{
                 width: '44px',
                 height: '24px',
@@ -148,8 +155,10 @@ const CrewController2: React.FC = () => {
                 border: 'none',
                 cursor: 'pointer',
                 position: 'relative',
-                transition: 'background 0.2s'
+                transition: 'all 0.2s',
+                boxShadow: dataMode === 'live' ? '0 0 10px rgba(16, 185, 129, 0.5)' : 'none'
               }}
+              title={`Click to switch to ${dataMode === 'mock' ? 'Live' : 'Mock'} Data`}
             >
               <div style={{
                 width: '20px',
