@@ -53,19 +53,6 @@ const personas = [
     accent: 'from-indigo-500/80 to-blue-500/80'
   },
   {
-    role: 'controller' as UserRole,
-    icon: Target,
-    title: 'Crew Controller',
-    subtitle: 'Real-time Operations',
-    capabilities: [
-      'Live disruption management',
-      'Instant crew reassignment',
-      'Reserve crew coordination'
-    ],
-    color: 'from-slate-900 via-rose-900 to-red-900',
-    accent: 'from-rose-500/80 to-orange-500/80'
-  },
-  {
     role: 'payroll' as UserRole,
     icon: DollarSign,
     title: 'Payroll Admin',
@@ -179,6 +166,110 @@ export default function LandingPage({ onSelectRole }: LandingPageProps) {
 
         {/* Persona Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+          {/* Crew Controller Card */}
+          <button
+            onClick={() => onSelectRole('controller')}
+            className="bg-slate-900/60 border border-white/10 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 text-left overflow-hidden backdrop-blur"
+          >
+            <div className="relative bg-gradient-to-br from-slate-900 via-rose-900 to-red-900 p-6">
+              <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.3),_transparent_45%)]" />
+              <Target className="relative w-12 h-12 text-white mb-3" />
+              <h3 className="relative text-xl font-bold text-white">Crew Controller</h3>
+              <p className="relative text-white/80 text-sm">Real-time Operations</p>
+            </div>
+            <div className="p-6 bg-slate-950/40">
+              <ul className="space-y-2 text-sm text-slate-200 mb-6">
+                <li className="flex items-start">
+                  <span className="text-emerald-300 mr-2">✓</span>
+                  Live disruption management
+                </li>
+                <li className="flex items-start">
+                  <span className="text-emerald-300 mr-2">✓</span>
+                  Instant crew reassignment
+                </li>
+                <li className="flex items-start">
+                  <span className="text-emerald-300 mr-2">✓</span>
+                  Reserve crew coordination
+                </li>
+              </ul>
+              <div className="w-full bg-gradient-to-r from-rose-500/80 to-orange-500/80 border border-white/10 text-white/90 py-3 rounded-lg hover:opacity-90 transition-opacity font-semibold text-center">
+                Login as Crew Controller
+              </div>
+            </div>
+          </button>
+
+          {/* Crew Controller 2.0 Card */}
+          <button
+            onClick={() => setShowCrewController2(true)}
+            className="bg-slate-900/60 border border-violet-500/30 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 text-left overflow-hidden backdrop-blur"
+          >
+            <div className="relative bg-gradient-to-br from-violet-900 via-purple-900 to-slate-900 p-6">
+              <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.3),_transparent_45%)]" />
+              <Zap className="relative w-12 h-12 text-white mb-3" />
+              <h3 className="relative text-xl font-bold text-white">Crew Controller 2.0</h3>
+              <p className="relative text-white/80 text-sm">AI-Powered Operations Intelligence</p>
+            </div>
+            <div className="p-6 bg-slate-950/40">
+              <ul className="space-y-2 text-sm text-slate-200 mb-6">
+                <li className="flex items-start">
+                  <span className="text-emerald-300 mr-2">✓</span>
+                  6 interactive scenario visualizations
+                </li>
+                <li className="flex items-start">
+                  <span className="text-emerald-300 mr-2">✓</span>
+                  Weather exposure & crew fatigue analysis
+                </li>
+                <li className="flex items-start">
+                  <span className="text-emerald-300 mr-2">✓</span>
+                  Reserve coverage maps & day comparisons
+                </li>
+                <li className="flex items-start">
+                  <span className="text-emerald-300 mr-2">✓</span>
+                  Root cause analytics & AI insights
+                </li>
+              </ul>
+              <div className="w-full bg-gradient-to-r from-violet-500 to-purple-600 border border-white/10 text-white/90 py-3 rounded-lg hover:opacity-90 transition-opacity font-semibold text-center">
+                Explore AI Intelligence
+              </div>
+            </div>
+          </button>
+
+          {/* Crew Controller 3.0 Card */}
+          <button
+            onClick={() => setShowCrewController3(true)}
+            className="bg-slate-900/60 border border-orange-500/30 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 text-left overflow-hidden backdrop-blur"
+          >
+            <div className="relative bg-gradient-to-br from-orange-900 via-red-900 to-slate-900 p-6">
+              <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.3),_transparent_45%)]" />
+              <Activity className="relative w-12 h-12 text-white mb-3" />
+              <h3 className="relative text-xl font-bold text-white">Crew Controller 3.0</h3>
+              <p className="relative text-white/80 text-sm">Gantt Timeline Interface</p>
+            </div>
+            <div className="p-6 bg-slate-950/40">
+              <ul className="space-y-2 text-sm text-slate-200 mb-6">
+                <li className="flex items-start">
+                  <span className="text-emerald-300 mr-2">✓</span>
+                  Real-time Gantt timeline view
+                </li>
+                <li className="flex items-start">
+                  <span className="text-emerald-300 mr-2">✓</span>
+                  Color-coded crew duty status
+                </li>
+                <li className="flex items-start">
+                  <span className="text-emerald-300 mr-2">✓</span>
+                  Active alerts panel with urgency sorting
+                </li>
+                <li className="flex items-start">
+                  <span className="text-emerald-300 mr-2">✓</span>
+                  Traditional controller workflow + AI
+                </li>
+              </ul>
+              <div className="w-full bg-gradient-to-r from-orange-500 to-red-600 border border-white/10 text-white/90 py-3 rounded-lg hover:opacity-90 transition-opacity font-semibold text-center">
+                Launch Gantt View
+              </div>
+            </div>
+          </button>
+
           {personas.map((persona) => {
               const Icon = persona.icon;
               return (
@@ -209,78 +300,6 @@ export default function LandingPage({ onSelectRole }: LandingPageProps) {
                 </button>
               );
             })}
-
-            {/* Crew Controller 2.0 Card */}
-            <button
-              onClick={() => setShowCrewController2(true)}
-              className="bg-slate-900/60 border border-violet-500/30 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 text-left overflow-hidden backdrop-blur"
-            >
-              <div className="relative bg-gradient-to-br from-violet-900 via-purple-900 to-slate-900 p-6">
-                <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.3),_transparent_45%)]" />
-                <Zap className="relative w-12 h-12 text-white mb-3" />
-                <h3 className="relative text-xl font-bold text-white">Crew Controller 2.0</h3>
-                <p className="relative text-white/80 text-sm">AI-Powered Operations Intelligence</p>
-              </div>
-              <div className="p-6 bg-slate-950/40">
-                <ul className="space-y-2 text-sm text-slate-200 mb-6">
-                  <li className="flex items-start">
-                    <span className="text-emerald-300 mr-2">✓</span>
-                    6 interactive scenario visualizations
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-emerald-300 mr-2">✓</span>
-                    Weather exposure & crew fatigue analysis
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-emerald-300 mr-2">✓</span>
-                    Reserve coverage maps & day comparisons
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-emerald-300 mr-2">✓</span>
-                    Root cause analytics & AI insights
-                  </li>
-                </ul>
-                <div className="w-full bg-gradient-to-r from-violet-500 to-purple-600 border border-white/10 text-white/90 py-3 rounded-lg hover:opacity-90 transition-opacity font-semibold text-center">
-                  Explore AI Intelligence
-                </div>
-              </div>
-            </button>
-
-            {/* Crew Controller 3.0 Card */}
-            <button
-              onClick={() => setShowCrewController3(true)}
-              className="bg-slate-900/60 border border-orange-500/30 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 text-left overflow-hidden backdrop-blur"
-            >
-              <div className="relative bg-gradient-to-br from-orange-900 via-red-900 to-slate-900 p-6">
-                <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.3),_transparent_45%)]" />
-                <Activity className="relative w-12 h-12 text-white mb-3" />
-                <h3 className="relative text-xl font-bold text-white">Crew Controller 3.0</h3>
-                <p className="relative text-white/80 text-sm">Gantt Timeline Interface</p>
-              </div>
-              <div className="p-6 bg-slate-950/40">
-                <ul className="space-y-2 text-sm text-slate-200 mb-6">
-                  <li className="flex items-start">
-                    <span className="text-emerald-300 mr-2">✓</span>
-                    Real-time Gantt timeline view
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-emerald-300 mr-2">✓</span>
-                    Color-coded crew duty status
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-emerald-300 mr-2">✓</span>
-                    Active alerts panel with urgency sorting
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-emerald-300 mr-2">✓</span>
-                    Traditional controller workflow + AI
-                  </li>
-                </ul>
-                <div className="w-full bg-gradient-to-r from-orange-500 to-red-600 border border-white/10 text-white/90 py-3 rounded-lg hover:opacity-90 transition-opacity font-semibold text-center">
-                  Launch Gantt View
-                </div>
-              </div>
-            </button>
 
             {/* Test Generator 2.0 Card */}
             <button
